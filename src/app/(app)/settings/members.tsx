@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Share, View } from 'react-native';
 import { useFinanceMutation } from '../../../api/finance';
 import { useHH } from '../../../api/household';
-import { Avatar, Banner, Button, Card, Divider, Header, Input, Screen, SectionHeader, Sheet, StatusPill, Text } from '../../../components/ui';
+import { Avatar, Banner, Button, Card, Divider, Header, Input, Screen, SectionHeader, Sheet, StatusPill, Switch, Text } from '../../../components/ui';
 import { supabase, unwrap } from '../../../lib/supabase';
 import { toast } from '../../../store/toast';
 import { useTheme } from '../../../theme/ThemeProvider';
@@ -17,7 +17,12 @@ export default function Members() {
   const [edit, setEdit] = useState<Member | null>(null);
   const [name, setName] = useState('');
   const invite = useFinanceMutation(async (memberId: string | null) => unwrap(await supabase.rpc('create_invite', { p_member: memberId ?? undefined })), { onSuccess: (c) => setCode(c as string) });
-  const rename = useFinanceMutation(async () => unwrap(await supabase.from('household_members').update({ display_name: name.trim() }).eq('id', edit!.id).select('id')), { success: 'Nombre actualizado', onSuccess: () => setEdit(null) });
+  const [admin, setAdmin] = useState(false);
+  const rename = useFinanceMutation(async () => {
+    const patch: { display_name: string; role?: 'admin' | 'member' } = { display_name: name.trim() };
+    if (isAdmin && edit!.id !== me?.id && edit!.user_id) patch.role = admin ? 'admin' : 'member';
+    return unwrap(await supabase.from('household_members').update(patch).eq('id', edit!.id).select('id'));
+  }, { success: 'Miembro actualizado', onSuccess: () => setEdit(null) });
   const pending = members.find((m) => !m.user_id);
   return (
     <Screen header={<Header title="Miembros" back />}>
@@ -35,7 +40,7 @@ export default function Members() {
                   {!m.user_id && <StatusPill small label="Pendiente" tone="warning" icon="clock" />}
                 </View>
               </View>
-              {(isAdmin || m.id === me?.id) && <Button title="Editar" size="sm" variant="ghost" full={false} onPress={() => { setEdit(m); setName(m.display_name); }} />}
+              {(isAdmin || m.id === me?.id) && <Button title="Editar" size="sm" variant="ghost" full={false} onPress={() => { setEdit(m); setName(m.display_name); setAdmin(m.role === 'admin'); }} />}
             </View>
             {!m.user_id && isAdmin && <Button title={`Invitar a ${m.display_name}`} icon="user-plus" size="md" loading={invite.isPending} onPress={() => invite.mutate(m.id)} />}
           </View>
@@ -57,6 +62,9 @@ export default function Members() {
       </Sheet>
       <Sheet visible={!!edit} onClose={() => setEdit(null)} title="Editar miembro" footer={<Button title="Guardar" disabled={!name.trim()} loading={rename.isPending} onPress={() => rename.mutate(undefined as never)} />}>
         <Input label="Nombre" value={name} onChangeText={setName} maxLength={40} />
+        {isAdmin && edit && edit.id !== me?.id && edit.user_id && (
+          <Switch label="Administrador del hogar" description="Puede invitar, editar el hogar y gestionar roles. Nunca ve tus finanzas personales." value={admin} onChange={setAdmin} />
+        )}
       </Sheet>
     </Screen>
   );

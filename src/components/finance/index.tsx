@@ -264,7 +264,7 @@ export function CategoryGrid({ categories, value, onChange }: { categories: Cate
             accessibilityRole="radio"
             accessibilityState={{ selected: sel }}
             accessibilityLabel={c.name}
-            style={{ width: '31%', minWidth: 96, flexGrow: 1, alignItems: 'center', gap: 6, paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1.5, borderColor: sel ? colors.brand : colors.border, backgroundColor: sel ? colors.brandSoft : colors.surface }}
+            style={{ width: '31.6%', minWidth: 96, alignItems: 'center', gap: 6, paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1.5, borderColor: sel ? colors.brand : colors.border, backgroundColor: sel ? colors.brandSoft : colors.surface }}
           >
             <IconTile icon={c.icon} color={c.color} size={34} />
             <Text variant="caption" numberOfLines={1} style={{ fontSize: 12, paddingHorizontal: 4 }} color={sel ? 'brand' : 'text'}>{c.name}</Text>
