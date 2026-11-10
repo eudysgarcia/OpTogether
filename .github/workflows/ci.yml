@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    name: Typecheck, lint y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx eslint src tests
+      - run: npm test -- --ci
+
+  database:
+    name: Base de datos (pgTAP) e integración
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Iniciar Supabase local
+        run: npx supabase start -x studio,imgproxy,inbucket,realtime,logflare,vector,supavisor
+      - name: Pruebas pgTAP
+        run: npx supabase test db
+      - name: Variables locales
+        run: |
+          npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' \
+            | sed -E 's/^API_URL=/EXPO_PUBLIC_SUPABASE_URL=/; s/^ANON_KEY=/EXPO_PUBLIC_SUPABASE_ANON_KEY=/' > .env.local
+      - name: Pruebas de integración
+        run: npm run test:integration

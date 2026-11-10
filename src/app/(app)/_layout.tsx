@@ -47,11 +47,15 @@ export default function AppLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {(!online || pending > 0) && <View style={{ paddingTop: insets.top, backgroundColor: colors.background }}><OfflineBanner /></View>}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="transaction/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
+      {(!online || pending > 0) && (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 84, borderRadius: 14, overflow: 'hidden' }}>
+          <OfflineBanner />
+        </View>
+      )}
     </View>
   );
 }
