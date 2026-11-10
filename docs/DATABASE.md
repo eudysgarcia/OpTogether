@@ -62,5 +62,5 @@ Migraciones en `supabase/migrations/`. Tablas principales:
 
 ## Pruebas
 
-`supabase/tests/database/01_ledger_security.test.sql` (pgTAP, 76 aserciones), `02_hardening.test.sql` (11) y
+`supabase/tests/database/01_ledger_security.test.sql` (pgTAP, 77 aserciones), `02_hardening.test.sql` (11) y
 `tests/integration/api.test.ts` (API real con dos usuarios y un externo).

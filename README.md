@@ -27,7 +27,7 @@ npm run web                   # o: npx expo start  (Android requiere development
 ```bash
 npm test                      # unitarias: cálculos de presupuesto, deudas, ahorros, aportes, simulador, reportes
 npm run test:integration      # integración contra Supabase local: gastos, pagos, abonos, fondos, comprobantes, privacidad
-npm run db:test               # pgTAP: reglas contables, RLS, privacidad, auditoría y endurecimiento (87 pruebas)
+npm run db:test               # pgTAP: reglas contables, RLS, privacidad, auditoría y endurecimiento (88 pruebas)
 npm run typecheck
 ```
 
