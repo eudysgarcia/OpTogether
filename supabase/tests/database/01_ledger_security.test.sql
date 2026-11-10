@@ -2,7 +2,7 @@
 -- Ejecutar: npx supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(76);
+select plan(77);
 
 -- ---------------------------------------------------------------- usuarios
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
@@ -225,7 +225,7 @@ select ok(not public.can_access_receipt_path(pg_temp.v('hid')::text || '/' || pg
 
 -- ---------------------------------------------------------------- Recordatorios / ciclos
 reset role;
-select pg_temp.put('cycle', (select id from public.bill_cycles order by due_date limit 1));
+select pg_temp.put('cycle', (select id from public.bill_cycles where household_id = pg_temp.v('hid') order by due_date limit 1));
 select lives_ok($$ select public.generate_notifications((select due_date - 5 from public.bill_cycles where id = pg_temp.v('cycle'))) $$,
                 'Generación de recordatorios');
 select ok(exists (select 1 from public.notifications where kind = 'bill_due' and dedupe_key like 'bill:' || pg_temp.v('cycle') || ':5:%'),
@@ -240,7 +240,8 @@ select pg_temp.v('hid'), 'expense', 1650, 'Pago internet', b.category_id, c.id
   from public.bill_cycles c join public.bills b on b.id = c.bill_id where c.id = pg_temp.v('cycle');
 select is((select status from public.v_bill_cycles where id = pg_temp.v('cycle')), 'paid', 'El monto real puede diferir del estimado y el ciclo queda pagado');
 reset role;
-select is(public.generate_notifications((select due_date - 1 from public.bill_cycles where id = pg_temp.v('cycle'))), 0,
+select lives_ok($$ select public.generate_notifications((select due_date - 1 from public.bill_cycles where id = pg_temp.v('cycle'))) $$, 'Generación tras el pago');
+select is((select count(*) from public.notifications where dedupe_key like 'bill:' || pg_temp.v('cycle') || ':1:%'), 0::bigint,
           'Un ciclo pagado no genera más recordatorios');
 
 select * from finish();
