@@ -1,7 +1,7 @@
 /**
  * OpTogether Design System — tokens.
- * Identidad v2: Azul marino #1F2C66 · Azul claro #60A5FA · Morado #8B5CF6 · Dorado #FBBF24.
- * Regla 60/30/10: superficies blancas (60), azules/morado de marca (30), dorado como acento (10).
+ * Identidad v3: marca "OT" en degradado cian→azul→violeta con destello; ícono sobre azul noche #0B0A40.
+ * Regla 60/30/10: superficies blancas (60), marino y azules de marca (30), violeta como acento (10).
  * Ningún componente debe usar valores literales de color, radio o espaciado: todo sale de aquí.
  */
 
@@ -27,7 +27,8 @@ export const palette = {
   sky100: '#E3EEFE',
 
   purple700: '#6D28D9',
-  purple500: '#8B5CF6', // morado (marca)
+  purple600: '#7C3AED', // violeta (marca v3)
+  purple500: '#8B5CF6',
   purple100: '#EFE9FE',
 
   rose700: '#BE185D',
@@ -130,12 +131,12 @@ export const lightColors: ThemeColors = {
   brandStrong: palette.navy900,
   brandSoft: palette.navy100,
   onBrand: palette.white,
-  accent: palette.yellow500,
-  accentSoft: palette.yellow100,
+  accent: palette.purple600,
+  accentSoft: palette.purple100,
   brandBlue: palette.sky600,
-  brandPurple: palette.purple500,
+  brandPurple: palette.purple600,
   brandPurpleSoft: palette.purple100,
-  onAccent: palette.navy950,
+  onAccent: palette.white,
   positive: palette.green600,
   positiveSoft: palette.green100,
   negative: palette.red600,
@@ -176,8 +177,8 @@ export const darkColors: ThemeColors = {
   brandStrong: palette.navy200,
   brandSoft: '#1E2547',
   onBrand: palette.white,
-  accent: palette.yellow500,
-  accentSoft: '#3A3216',
+  accent: '#A78BFA',
+  accentSoft: '#2A2147',
   brandBlue: palette.sky400,
   brandPurple: '#A78BFA',
   brandPurpleSoft: '#2A2147',

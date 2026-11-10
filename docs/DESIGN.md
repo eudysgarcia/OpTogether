@@ -2,20 +2,21 @@
 
 Tokens en `src/theme/tokens.ts`; ningún componente usa colores, radios o espaciados literales.
 
-## Identidad (v2)
-Isotipo: casa + pareja formando un corazón con barras de crecimiento (`assets/brand/isotype.png`,
-extraído de `assets/brand/branding-source-v2.jpg`). Logotipo: **Op** marino · **To** azul · **gether** morado,
-lema *“Construyendo nuestro futuro, juntos”* con subrayado dorado.
+## Identidad (v4)
+Ícono: "OT" (O cian→azul, T blanca) con anillo violeta y destello dorado, sobre azul noche con ondas
+(`assets/brand/isotype.png`, extraído de `assets/brand/branding-source-v4.png`). Logotipo: **Op** en tinta ·
+**To** violeta · **gether** en degradado violeta→azul, con trazo violeta y destello dorado.
 
 | Color | Hex | Uso |
 |---|---|---|
+| Azul noche | `#0B0A40` | Fondo del ícono |
 | Azul marino | `#1F2C66` | Marca principal: navegación, encabezado del inicio, botones primarios |
-| Azul claro | `#60A5FA` (`#2563EB` en texto) | Marca secundaria, aportaciones, miembro Eudys |
-| Morado | `#8B5CF6` | Marca secundaria, logotipo, miembro Mei |
-| Dorado | `#FBBF24` | Acento (≈10 %): botón de registro rápido, progreso, no leídos |
+| Violeta | `#7C3AED` | Acento (≈10 %): botón de registro rápido, progreso, “To” del logotipo |
+| Azul | `#2563EB` | Marca secundaria, aportaciones |
+| Dorado | `#FBBF24` | Destello de la marca y avisos |
 
 ## Color (60 / 30 / 10)
-- **60 % blanco / superficies**, **30 % azules y morado de marca**, **10 % dorado**.
+- **60 % blanco / superficies**, **30 % marino y azules de marca**, **10 % violeta**.
 - Semánticos financieros, uno por concepto y nunca un color de marca: presupuesto `budget` (marino),
   gasto `spent`, disponible `available` (verde), exceso `excess` (rojo), ahorro `savings` (teal),
   deuda `debt` (rosa oscuro), fondos `fund` (ámbar), aportaciones `contribution` (azul).

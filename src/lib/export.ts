@@ -44,8 +44,8 @@ export async function exportPDF(opts: { title: string; subtitle: string; kpis: {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>
     *{font-family:-apple-system,Roboto,Helvetica,Arial,sans-serif;color:#0E1538}
     body{padding:28px}
-    .brand{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #FBBF24;padding-bottom:12px;margin-bottom:18px}
-    .logo{font-size:22px;font-weight:800;color:#1F2C66}.logo .to{color:#2563EB}.logo .g{color:#8B5CF6}
+    .brand{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #7C3AED;padding-bottom:12px;margin-bottom:18px}
+    .logo{font-size:22px;font-weight:800;color:#0E1538}.logo .to{color:#7C3AED}.logo .g{color:#0E1538}
     h1{font-size:20px;margin:0}.sub{color:#5A6175;font-size:12px}
     .kpis{display:flex;gap:10px;margin:16px 0}.kpi{flex:1;background:#F3F5FB;border-radius:10px;padding:10px}
     .kpi b{display:block;font-size:16px;color:#1F2C66}.kpi small{color:#5A6175;font-size:11px}

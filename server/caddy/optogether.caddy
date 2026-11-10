@@ -4,7 +4,8 @@
 #
 # A) Caddy instalado en el servidor (systemd/apt): usa tal cual (127.0.0.1).
 # B) Caddy dentro de Docker (p. ej. proxy-caddy-1): usa docker-compose.proxy.yml y cambia
-#    127.0.0.1:8730 → optogether-rest:3000   y   127.0.0.1:8731 → optogether-api:8080
+#    127.0.0.1:8730 → optogether-rest:3000, 127.0.0.1:8731 → optogether-api:8080
+#    y 127.0.0.1:8732 → optogether-web:80
 # ---------------------------------------------------------------------------
 finanzas.tu-dominio.com {
 	encode gzip
@@ -30,6 +31,6 @@ finanzas.tu-dominio.com {
 		reverse_proxy 127.0.0.1:8731
 	}
 	handle {
-		respond "OpTogether API" 200
+		reverse_proxy 127.0.0.1:8732
 	}
 }

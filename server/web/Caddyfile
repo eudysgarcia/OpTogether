@@ -1,0 +1,10 @@
+# Servidor de archivos estáticos de la app web (interno; el proxy del servidor pone el HTTPS)
+:80 {
+	root * /srv
+	encode gzip
+	@inmutables path /_expo/* /assets/*
+	header @inmutables Cache-Control "public, max-age=31536000, immutable"
+	header /index.html Cache-Control "no-cache"
+	try_files {path} /index.html
+	file_server
+}

@@ -13,6 +13,11 @@ services:
       default:
       web:
         aliases: [optogether-api]
+  web:
+    networks:
+      default:
+      web:
+        aliases: [optogether-web]
 
 networks:
   web:

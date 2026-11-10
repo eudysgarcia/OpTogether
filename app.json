@@ -19,7 +19,7 @@
     "android": {
       "package": "com.eudysgarcia.optogether",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#0B0A40",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -54,7 +54,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#1F2C66",
+          "color": "#7C3AED",
           "defaultChannel": "reminders"
         }
       ],

@@ -83,6 +83,17 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # App web (Expo para web) servida como archivos estáticos.
+  web:
+    build:
+      context: ..
+      dockerfile: server/web/Dockerfile
+      args:
+        EXPO_PUBLIC_API_URL: ${PUBLIC_URL}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8732}:80"
+
   # Solo si el servidor NO tiene ya un proxy en 80/443:  --profile caddy
   caddy:
     image: caddy:2

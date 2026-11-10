@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+.git
+.expo
+dist
+android
+ios
+coverage
+.env
+.env.*
+server/.env
+google-services.json
+*.apk
+*.aab

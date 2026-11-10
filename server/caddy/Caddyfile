@@ -21,6 +21,6 @@
 		reverse_proxy api:8080
 	}
 	handle {
-		respond "OpTogether API" 200
+		reverse_proxy web:80
 	}
 }
