@@ -1,7 +1,7 @@
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
-import { supabase, unwrap } from '../lib/supabase';
+import { db, unwrap } from '../lib/api';
 import { invalidateFinance } from '../lib/queryClient';
 import { errorMessage } from '../lib/errors';
 import { toast } from '../store/toast';
@@ -43,7 +43,7 @@ export function useCategories(includeArchived = false) {
     queryKey: ['categories', hid, includeArchived],
     enabled: !!hid,
     queryFn: async () => {
-      let q = supabase.from('categories').select('*').eq('household_id', hid).order('sort_order').order('name');
+      let q = db.from('categories').select('*').eq('household_id', hid).order('sort_order').order('name');
       if (!includeArchived) q = q.is('archived_at', null);
       return unwrap(await q) as Category[];
     },
@@ -56,7 +56,7 @@ export function usePaymentMethods() {
     queryKey: ['payment_methods', hid],
     enabled: !!hid,
     queryFn: async () =>
-      unwrap(await supabase.from('payment_methods').select('*').eq('household_id', hid).is('archived_at', null).order('name')) as PaymentMethod[],
+      unwrap(await db.from('payment_methods').select('*').eq('household_id', hid).is('archived_at', null).order('name')) as PaymentMethod[],
   });
 }
 
@@ -66,7 +66,7 @@ export function usePeriod(ym: YearMonth) {
   return useQuery({
     queryKey: ['period', hid, ym.year, ym.month],
     enabled: !!hid,
-    queryFn: async () => unwrap(await supabase.rpc('ensure_period', { hid, p_year: ym.year, p_month: ym.month })) as string,
+    queryFn: async () => unwrap(await db.rpc('ensure_period', { hid, p_year: ym.year, p_month: ym.month })) as string,
   });
 }
 
@@ -78,7 +78,7 @@ export function useAllocations(ym: YearMonth) {
     enabled: !!hid && !!period.data,
     queryFn: async () =>
       unwrap(
-        await supabase.from('v_allocations').select('*').eq('period_id', period.data!).order('category_name'),
+        await db.from('v_allocations').select('*').eq('period_id', period.data!).order('category_name'),
       ) as AllocationRow[],
   });
 }
@@ -87,7 +87,7 @@ export function useAllocation(id: string | undefined) {
   return useQuery({
     queryKey: ['allocation', id],
     enabled: !!id,
-    queryFn: async () => unwrap(await supabase.from('v_allocations').select('*').eq('id', id!).single()) as AllocationRow,
+    queryFn: async () => unwrap(await db.from('v_allocations').select('*').eq('id', id!).single()) as AllocationRow,
   });
 }
 
@@ -97,7 +97,7 @@ export function useBudgetMoves(allocationId: string | undefined) {
     enabled: !!allocationId,
     queryFn: async () =>
       unwrap(
-        await supabase.from('budget_moves').select('*')
+        await db.from('budget_moves').select('*')
           .or(`from_allocation_id.eq.${allocationId},to_allocation_id.eq.${allocationId}`)
           .order('created_at', { ascending: false }),
       ) as BudgetMove[],
@@ -111,7 +111,7 @@ export function useAllocationsHistory(categoryId: string | undefined, months = 6
     enabled: !!hid && !!categoryId,
     queryFn: async () =>
       unwrap(
-        await supabase.from('v_allocations').select('*').eq('household_id', hid).eq('category_id', categoryId!)
+        await db.from('v_allocations').select('*').eq('household_id', hid).eq('category_id', categoryId!)
           .order('year', { ascending: false }).order('month', { ascending: false }).limit(months),
       ) as AllocationRow[],
   });
@@ -124,7 +124,7 @@ export function useAllocationsRange(from: YearMonth, to: YearMonth) {
     queryKey: ['allocations_range', hid, from, to],
     enabled: !!hid,
     queryFn: async () => {
-      const rows = unwrap(await supabase.from('v_allocations').select('*').eq('household_id', hid)) as AllocationRow[];
+      const rows = unwrap(await db.from('v_allocations').select('*').eq('household_id', hid)) as AllocationRow[];
       const a = from.year * 12 + from.month;
       const b = to.year * 12 + to.month;
       return rows.filter((r) => r.year * 12 + r.month >= a && r.year * 12 + r.month <= b);
@@ -156,7 +156,7 @@ export function useTransactions(f: TxFilters, enabled = true) {
     queryKey: ['transactions', hid, f],
     enabled: !!hid && enabled,
     queryFn: async () => {
-      let q = supabase.from('transactions').select('*').eq('household_id', hid);
+      let q = db.from('transactions').select('*').eq('household_id', hid);
       q = q.eq('scope', f.scope ?? 'household');
       if (f.from) q = q.gte('occurred_on', f.from);
       if (f.to) q = q.lte('occurred_on', f.to);
@@ -183,7 +183,7 @@ export function useTransaction(id: string | undefined) {
   return useQuery({
     queryKey: ['transaction', id],
     enabled: !!id,
-    queryFn: async () => unwrap(await supabase.from('transactions').select('*').eq('id', id!).single()) as Transaction,
+    queryFn: async () => unwrap(await db.from('transactions').select('*').eq('id', id!).single()) as Transaction,
   });
 }
 
@@ -202,7 +202,7 @@ export function useCreateTransaction(opts: { success?: string; onSuccess?: (id: 
         }
         throw new Error('Network request failed');
       }
-      const row = unwrap(await supabase.from('transactions').insert(payload).select('id').single());
+      const row = unwrap(await db.from('transactions').insert(payload).select('id').single());
       return { id: row!.id, queued: false };
     },
     {
@@ -217,14 +217,14 @@ export function useCreateTransaction(opts: { success?: string; onSuccess?: (id: 
 export function useUpdateTransaction() {
   return useFinanceMutation(
     async (v: { id: string; patch: Updates<'transactions'> }) =>
-      unwrap(await supabase.from('transactions').update(v.patch).eq('id', v.id).select('id').single()),
+      unwrap(await db.from('transactions').update(v.patch).eq('id', v.id).select('id').single()),
     { success: 'Cambios guardados' },
   );
 }
 
 export function useVoidTransaction() {
   return useFinanceMutation(
-    async (v: { id: string; reason: string }) => unwrap(await supabase.rpc('void_transaction', { p_id: v.id, p_reason: v.reason })),
+    async (v: { id: string; reason: string }) => unwrap(await db.rpc('void_transaction', { p_id: v.id, p_reason: v.reason })),
     { success: 'Movimiento anulado' },
   );
 }
@@ -234,7 +234,7 @@ export async function flushOutbox() {
   const { items, remove, markFailed } = useOutbox.getState();
   let synced = 0;
   for (const it of items) {
-    const { error } = await supabase.from('transactions').insert(it.payload);
+    const { error } = await db.from('transactions').insert(it.payload);
     if (!error || String(error.message).includes('duplicate key')) {
       remove(it.id);
       synced++;
@@ -256,7 +256,7 @@ export function useAttachments(txId: string | undefined) {
     queryKey: ['attachments', txId],
     enabled: !!txId,
     queryFn: async () =>
-      unwrap(await supabase.from('transaction_attachments').select('*').eq('transaction_id', txId!).order('created_at')) as Attachment[],
+      unwrap(await db.from('transaction_attachments').select('*').eq('transaction_id', txId!).order('created_at')) as Attachment[],
   });
 }
 
@@ -266,7 +266,7 @@ export function useAudit(table: string, recordId: string | undefined) {
     enabled: !!recordId,
     queryFn: async () =>
       unwrap(
-        await supabase.from('audit_logs').select('*').eq('table_name', table).eq('record_id', recordId!).order('created_at', { ascending: false }),
+        await db.from('audit_logs').select('*').eq('table_name', table).eq('record_id', recordId!).order('created_at', { ascending: false }),
       ) as AuditLog[],
   });
 }
@@ -277,7 +277,7 @@ export function useAuditFeed(limit = 100) {
     queryKey: ['audit_feed', hid, limit],
     enabled: !!hid,
     queryFn: async () =>
-      unwrap(await supabase.from('audit_logs').select('*').eq('household_id', hid).order('created_at', { ascending: false }).limit(limit)) as AuditLog[],
+      unwrap(await db.from('audit_logs').select('*').eq('household_id', hid).order('created_at', { ascending: false }).limit(limit)) as AuditLog[],
   });
 }
 
@@ -290,10 +290,10 @@ export function useFunds(scope: Scope = 'household', includeArchived = false) {
     queryKey: ['funds', hid, scope, includeArchived],
     enabled: !!hid,
     queryFn: async () => {
-      let q = supabase.from('funds').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
+      let q = db.from('funds').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
       if (!includeArchived) q = q.is('archived_at', null);
       const funds = unwrap(await q) as Fund[];
-      const bal = unwrap(await supabase.from('v_fund_balances').select('*').eq('household_id', hid).eq('scope', scope));
+      const bal = unwrap(await db.from('v_fund_balances').select('*').eq('household_id', hid).eq('scope', scope));
       const map = new Map((bal ?? []).map((b) => [b.fund_id, b]));
       return funds.map((f) => ({
         ...f,
@@ -314,10 +314,10 @@ export function useGoals(scope: Scope = 'household', includeArchived = false) {
     queryKey: ['goals', hid, scope, includeArchived],
     enabled: !!hid,
     queryFn: async () => {
-      let q = supabase.from('savings_goals').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
+      let q = db.from('savings_goals').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
       if (!includeArchived) q = q.neq('status', 'archived');
       const goals = unwrap(await q) as SavingsGoal[];
-      const bal = unwrap(await supabase.from('v_goal_balances').select('*').eq('household_id', hid).eq('scope', scope));
+      const bal = unwrap(await db.from('v_goal_balances').select('*').eq('household_id', hid).eq('scope', scope));
       const map = new Map((bal ?? []).map((b) => [b.goal_id, b]));
       return goals.map((g) => ({
         ...g,
@@ -337,7 +337,7 @@ export function useDebts(scope: Scope = 'household', includeArchived = false) {
     queryKey: ['debts', hid, scope, includeArchived],
     enabled: !!hid,
     queryFn: async () => {
-      let q = supabase.from('v_debts').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
+      let q = db.from('v_debts').select('*').eq('household_id', hid).eq('scope', scope).order('created_at');
       if (!includeArchived) q = q.eq('status', 'active');
       return unwrap(await q) as DebtRow[];
     },
@@ -348,7 +348,7 @@ export function useDebt(id: string | undefined) {
   return useQuery({
     queryKey: ['debt', id],
     enabled: !!id,
-    queryFn: async () => unwrap(await supabase.from('v_debts').select('*').eq('id', id!).single()) as DebtRow,
+    queryFn: async () => unwrap(await db.from('v_debts').select('*').eq('id', id!).single()) as DebtRow,
   });
 }
 
@@ -359,7 +359,7 @@ export function useBills(scope: Scope = 'household') {
     queryKey: ['bills', hid, scope],
     enabled: !!hid,
     queryFn: async () =>
-      unwrap(await supabase.from('bills').select('*').eq('household_id', hid).eq('scope', scope).order('due_day')) as Bill[],
+      unwrap(await db.from('bills').select('*').eq('household_id', hid).eq('scope', scope).order('due_day')) as Bill[],
   });
 }
 
@@ -367,7 +367,7 @@ export function useBill(id: string | undefined) {
   return useQuery({
     queryKey: ['bill', id],
     enabled: !!id,
-    queryFn: async () => unwrap(await supabase.from('bills').select('*').eq('id', id!).single()) as Bill,
+    queryFn: async () => unwrap(await db.from('bills').select('*').eq('id', id!).single()) as Bill,
   });
 }
 
@@ -377,8 +377,8 @@ export function useBillCycles(opts: { from?: string; to?: string; billId?: strin
     queryKey: ['bill_cycles', hid, opts],
     enabled: !!hid,
     queryFn: async () => {
-      await supabase.rpc('ensure_bill_cycles', { hid });
-      let q = supabase.from('v_bill_cycles').select('*').eq('household_id', hid);
+      await db.rpc('ensure_bill_cycles', { hid });
+      let q = db.from('v_bill_cycles').select('*').eq('household_id', hid);
       if (opts.scope) q = q.eq('scope', opts.scope);
       if (opts.billId) q = q.eq('bill_id', opts.billId);
       if (opts.from) q = q.gte('due_date', opts.from);
@@ -400,7 +400,7 @@ export function useReminders(from?: string, to?: string) {
     queryKey: ['reminders', hid, from, to],
     enabled: !!hid,
     queryFn: async () => {
-      let q = supabase.from('reminders').select('*').eq('household_id', hid);
+      let q = db.from('reminders').select('*').eq('household_id', hid);
       if (from) q = q.gte('remind_on', from);
       if (to) q = q.lte('remind_on', to);
       return unwrap(await q.order('remind_on')) as Reminder[];
@@ -415,7 +415,7 @@ export function useNotifications() {
     enabled: !!uid,
     refetchInterval: 60_000,
     queryFn: async () =>
-      unwrap(await supabase.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(100)) as AppNotification[],
+      unwrap(await db.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(100)) as AppNotification[],
   });
 }
 
@@ -423,7 +423,7 @@ export function useMarkNotificationsRead() {
   return useMutation({
     mutationFn: async (ids: string[]) => {
       if (!ids.length) return;
-      unwrap(await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids));
+      unwrap(await db.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids));
     },
     onSuccess: () => invalidateFinance(),
   });

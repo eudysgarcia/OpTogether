@@ -9,7 +9,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "@react-native-community/netinfo": "12.0.1",
-    "@supabase/supabase-js": "^2.119.0",
+    "@supabase/postgrest-js": "^2.119.0",
     "@tanstack/query-async-storage-persister": "^5.107.1",
     "@tanstack/react-query": "^5.107.1",
     "@tanstack/react-query-persist-client": "^5.107.1",
@@ -64,7 +64,6 @@
     "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
-    "supabase": "^3.1.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -75,9 +74,10 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "db:test": "supabase test db",
-    "db:reset": "supabase db reset",
-    "test:integration": "jest -c jest.integration.config.js --runInBand"
+    "db:test": "sh server/db/test.sh",
+    "test:integration": "jest -c jest.integration.config.js --runInBand",
+    "server:up": "cd server && docker compose up -d --build",
+    "server:down": "cd server && docker compose down"
   },
   "private": true,
   "jest": {

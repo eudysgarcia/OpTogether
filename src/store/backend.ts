@@ -3,45 +3,34 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 /**
- * Configuración del backend. Por defecto se toma de las variables públicas de compilación
- * (EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY). Si el APK se compiló sin ellas,
- * la app permite introducirlas una sola vez (la anon key es pública por diseño; la seguridad la da RLS).
+ * URL del servidor propio (Caddy → PostgREST + API). Por defecto viene de EXPO_PUBLIC_API_URL
+ * en la compilación; si el APK se generó sin ella, la app la pide una sola vez.
  */
 type BackendState = {
   url: string;
-  anonKey: string;
   hydrated: boolean;
-  setBackend: (url: string, anonKey: string) => void;
+  setBackend: (url: string) => void;
   reset: () => void;
 };
 
-const ENV_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const ENV_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const ENV_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
 
 export const useBackend = create<BackendState>()(
   persist(
     (set) => ({
       url: ENV_URL,
-      anonKey: ENV_KEY,
       hydrated: false,
-      setBackend: (url, anonKey) => set({ url: url.trim().replace(/\/+$/, ''), anonKey: anonKey.trim() }),
-      reset: () => set({ url: ENV_URL, anonKey: ENV_KEY }),
+      setBackend: (url) => set({ url: url.trim().replace(/\/+$/, '') }),
+      reset: () => set({ url: ENV_URL }),
     }),
     {
-      name: 'optogether-backend',
+      name: 'optogether-backend-v2',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ url: s.url, anonKey: s.anonKey }),
-      merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<BackendState>;
-        // Las variables de compilación tienen prioridad si existen.
-        return { ...current, url: ENV_URL || p.url || '', anonKey: ENV_KEY || p.anonKey || '' };
-      },
+      partialize: (s) => ({ url: s.url }),
+      merge: (persisted, current) => ({ ...current, url: ENV_URL || (persisted as Partial<BackendState>)?.url || '' }),
       onRehydrateStorage: () => () => useBackend.setState({ hydrated: true }),
     },
   ),
 );
 
-export const backendConfigured = () => {
-  const { url, anonKey } = useBackend.getState();
-  return /^https?:\/\/.+/.test(url) && anonKey.length > 20;
-};
+export const backendConfigured = () => /^https?:\/\/.+/.test(useBackend.getState().url);

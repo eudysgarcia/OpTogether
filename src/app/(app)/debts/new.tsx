@@ -7,7 +7,7 @@ import { Banner, Button, DateField, Header, Input, Loading, Screen, Select } fro
 import { FREQUENCY_LABEL, todayISO, type Frequency } from '../../../lib/dates';
 import { DEBT_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 import type { Scope } from '../../../types/models';
 
@@ -35,8 +35,8 @@ function DebtForm({ id, scope, initial }: { id?: string; scope: Scope; initial?:
         start_date: f.start, due_date: f.due || null, installment_amount: parseAmount(f.installment) || null, frequency: f.frequency,
         installments_count: f.count ? Number(f.count) : null, responsible_member_id: f.responsible, notes: f.notes.trim() || null,
       };
-      if (id) return unwrap(await supabase.from('debts').update(row).eq('id', id).select('id').single());
-      return unwrap(await supabase.from('debts').insert({ ...row, household_id: hid, scope }).select('id').single());
+      if (id) return unwrap(await db.from('debts').update(row).eq('id', id).select('id').single());
+      return unwrap(await db.from('debts').insert({ ...row, household_id: hid, scope }).select('id').single());
     },
     { success: id ? 'Deuda actualizada' : 'Deuda registrada', onSuccess: (r) => (id ? router.back() : router.replace(`/debts/${r!.id}`)) },
   );

@@ -1,44 +1,40 @@
-import type { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getSupabase } from '../lib/supabase';
+import { auth } from '../lib/api';
+import type { Session } from '../lib/session';
 import { queryClient } from '../lib/queryClient';
 import { useBackend } from '../store/backend';
 
-type AuthState = { session: Session | null; loading: boolean; recovering: boolean; setRecovering: (v: boolean) => void };
+type AuthState = { session: Session | null; loading: boolean };
 
-const AuthContext = createContext<AuthState>({ session: null, loading: true, recovering: false, setRecovering: () => {} });
+const AuthContext = createContext<AuthState>({ session: null, loading: true });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const url = useBackend((s) => s.url);
-  const anonKey = useBackend((s) => s.anonKey);
   const hydrated = useBackend((s) => s.hydrated);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [recovering, setRecovering] = useState(false);
-  const noBackend = hydrated && (!url || !anonKey);
+  const noBackend = hydrated && !url;
 
   useEffect(() => {
-    if (!hydrated || !url || !anonKey) return;
-    const sb = getSupabase();
+    if (!hydrated || !url) return;
     let mounted = true;
-    sb.auth.getSession().then(({ data }) => {
+    auth.getSession().then((s) => {
       if (!mounted) return;
-      setSession(data.session);
+      setSession(s);
       setLoading(false);
     });
-    const { data: sub } = sb.auth.onAuthStateChange((event, s) => {
+    const off = auth.onChange((s, event) => {
       setSession(s);
-      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
       if (event === 'SIGNED_OUT') queryClient.clear();
     });
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      off();
     };
-  }, [url, anonKey, hydrated]);
+  }, [url, hydrated]);
 
   return (
-    <AuthContext.Provider value={{ session: noBackend ? null : session, loading: !hydrated || (!noBackend && loading), recovering, setRecovering }}>
+    <AuthContext.Provider value={{ session: noBackend ? null : session, loading: !hydrated || (!noBackend && loading) }}>
       {children}
     </AuthContext.Provider>
   );

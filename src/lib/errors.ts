@@ -24,7 +24,9 @@ const MESSAGES: Record<string, string> = {
   MONTO_INVALIDO: 'Introduce un monto válido mayor que cero.',
   BACKEND_NO_CONFIGURADO: 'La app aún no está conectada al servidor.',
   'Invalid login credentials': 'Correo o contraseña incorrectos.',
-  'Email not confirmed': 'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.',
+  ULTIMO_ADMIN: 'El hogar necesita al menos un administrador.',
+  'Too Many Requests': 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
+  'Rate limit exceeded': 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
   'User already registered': 'Ya existe una cuenta con ese correo.',
   'Network request failed': 'Sin conexión. Revisa tu internet e inténtalo de nuevo.',
   'Failed to fetch': 'Sin conexión. Revisa tu internet e inténtalo de nuevo.',
@@ -40,6 +42,8 @@ export function errorMessage(err: unknown): string {
     if (raw.includes(k)) return v;
   }
   if (e?.hint && /^[A-ZÁÉÍÓÚ]/.test(e.hint) && !e.hint.includes('GRANT')) return e.hint;
+  // Mensajes ya redactados en español por el servidor (validaciones de cuenta)
+  if (e?.message && /^[A-ZÁÉÍÓÚ¿][a-záéíóúñ]/.test(e.message) && /[áéíóúñ]|\b(la|el|de|no)\b/i.test(e.message)) return e.message;
   return 'Algo salió mal. Inténtalo de nuevo.';
 }
 

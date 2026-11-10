@@ -4,7 +4,7 @@ import { Share, View } from 'react-native';
 import { useFinanceMutation } from '../../../api/finance';
 import { useHH } from '../../../api/household';
 import { Avatar, Banner, Button, Card, Divider, Header, Input, Screen, SectionHeader, Sheet, StatusPill, Switch, Text } from '../../../components/ui';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { toast } from '../../../store/toast';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { radius, space } from '../../../theme/tokens';
@@ -16,12 +16,12 @@ export default function Members() {
   const [code, setCode] = useState<string | null>(null);
   const [edit, setEdit] = useState<Member | null>(null);
   const [name, setName] = useState('');
-  const invite = useFinanceMutation(async (memberId: string | null) => unwrap(await supabase.rpc('create_invite', { p_member: memberId ?? undefined })), { onSuccess: (c) => setCode(c as string) });
+  const invite = useFinanceMutation(async (memberId: string | null) => unwrap(await db.rpc('create_invite', { p_member: memberId ?? undefined })), { onSuccess: (c) => setCode(c as string) });
   const [admin, setAdmin] = useState(false);
   const rename = useFinanceMutation(async () => {
     const patch: { display_name: string; role?: 'admin' | 'member' } = { display_name: name.trim() };
     if (isAdmin && edit!.id !== me?.id && edit!.user_id) patch.role = admin ? 'admin' : 'member';
-    return unwrap(await supabase.from('household_members').update(patch).eq('id', edit!.id).select('id'));
+    return unwrap(await db.from('household_members').update(patch).eq('id', edit!.id).select('id'));
   }, { success: 'Miembro actualizado', onSuccess: () => setEdit(null) });
   const pending = members.find((m) => !m.user_id);
   return (

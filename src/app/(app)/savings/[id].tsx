@@ -10,7 +10,7 @@ import { Banner, Button, Card, ConfirmSheet, EmptyState, Header, Icon, IconButto
 import { monthlyCommitment, projectGoal } from '../../../domain/savings';
 import { MONTHS_SHORT, formatDate, todayISO } from '../../../lib/dates';
 import { formatMoney, formatPct } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { space } from '../../../theme/tokens';
 import type { Scope } from '../../../types/models';
@@ -25,7 +25,7 @@ export default function GoalDetail() {
   const txs = useTransactions({ goalId: id, scope: g?.scope as Scope | undefined, limit: 200 }, !!g);
   const [confirm, setConfirm] = useState<'complete' | 'archive' | 'reactivate' | null>(null);
   const status = useFinanceMutation(
-    async (s: string) => unwrap(await supabase.from('savings_goals').update({ status: s, completed_at: s === 'completed' ? new Date().toISOString() : null }).eq('id', id!).select('id')),
+    async (s: string) => unwrap(await db.from('savings_goals').update({ status: s, completed_at: s === 'completed' ? new Date().toISOString() : null }).eq('id', id!).select('id')),
     { success: 'Meta actualizada', onSuccess: () => setConfirm(null) },
   );
   if (!g) return <Screen header={<Header title="Meta" back />}><Loading /></Screen>;

@@ -5,7 +5,7 @@ import { currentIncomes, useHH, useIncomes } from '../../../api/household';
 import { Avatar, Banner, Button, Card, DateField, Divider, Header, Input, KeyValue, Money, Screen, SectionHeader, Sheet, Text } from '../../../components/ui';
 import { formatDate, todayISO } from '../../../lib/dates';
 import { formatMoney, parseAmount, sum } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 import type { Member } from '../../../types/models';
 
@@ -17,7 +17,7 @@ export default function Incomes() {
   const [amount, setAmount] = useState('');
   const [from, setFrom] = useState(todayISO().slice(0, 8) + '01');
   const save = useFinanceMutation(
-    async () => unwrap(await supabase.from('income_records').upsert({ household_id: hid, member_id: edit!.id, amount: parseAmount(amount)!, effective_from: from, note: 'Actualización' }, { onConflict: 'member_id,effective_from' }).select('id')),
+    async () => unwrap(await db.from('income_records').upsert({ household_id: hid, member_id: edit!.id, amount: parseAmount(amount)!, effective_from: from, note: 'Actualización' }, { onConflict: 'member_id,effective_from' }).select('id')),
     { success: 'Ingreso actualizado', onSuccess: () => setEdit(null) },
   );
   return (

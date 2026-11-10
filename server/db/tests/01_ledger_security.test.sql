@@ -2,6 +2,8 @@
 -- Ejecutar: npx supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
+set search_path = public, extensions;
+grant usage on schema extensions to authenticated;
 select plan(77);
 
 -- ---------------------------------------------------------------- usuarios

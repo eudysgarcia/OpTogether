@@ -1,0 +1,5 @@
+# PostgreSQL 17 oficial + pg_cron (recordatorios programados) + pgTAP (pruebas)
+FROM postgres:17-bookworm
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-17-cron postgresql-17-pgtap \
+ && rm -rf /var/lib/apt/lists/*

@@ -7,7 +7,7 @@ on:
 
 jobs:
   app:
-    name: Typecheck, lint y pruebas
+    name: App · typecheck, lint y pruebas
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +20,8 @@ jobs:
       - run: npx eslint src tests
       - run: npm test -- --ci
 
-  database:
-    name: Base de datos (pgTAP) e integración
+  backend:
+    name: Backend · PostgreSQL + PostgREST + API
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,14 +29,31 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Iniciar Supabase local
-        run: npx supabase start -x studio,imgproxy,inbucket,realtime,logflare,vector,supavisor
-      - name: Pruebas pgTAP
-        run: npx supabase test db
-      - name: Variables locales
+      - name: Pruebas unitarias de la API
+        working-directory: server/api
+        run: npm ci && npm test
+      - name: Levantar la pila (secretos efímeros)
+        working-directory: server
         run: |
-          npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' \
-            | sed -E 's/^API_URL=/EXPO_PUBLIC_SUPABASE_URL=/; s/^ANON_KEY=/EXPO_PUBLIC_SUPABASE_ANON_KEY=/' > .env.local
+          cat > .env <<EOT
+          DOMAIN=:80
+          HTTP_PORT=8088
+          HTTPS_PORT=8443
+          PUBLIC_URL=http://localhost:8088
+          POSTGRES_PASSWORD=$(openssl rand -hex 24)
+          AUTHENTICATOR_PASSWORD=$(openssl rand -hex 24)
+          API_DB_PASSWORD=$(openssl rand -hex 24)
+          JWT_SECRET=$(openssl rand -hex 32)
+          EOT
+          docker compose up -d --build
+          for i in $(seq 1 60); do curl -sf http://localhost:8088/health && break; sleep 3; done
+          curl -sf http://localhost:8088/health
+      - name: Pruebas pgTAP
+        run: sh server/db/test.sh
+      - run: npm ci
       - name: Pruebas de integración
         run: npm run test:integration
+      - name: Logs ante fallo
+        if: failure()
+        working-directory: server
+        run: docker compose logs --tail 100

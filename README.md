@@ -2,45 +2,60 @@
 
 > Construyendo nuestro futuro, juntos.
 
-Aplicación móvil privada de finanzas del hogar para **Eudys y Mei**: presupuesto, gastos, aportaciones, pagos de servicios, vencimientos, fondos y caja chica, deudas y abonos, ahorros compartidos y personales, finanzas personales privadas, comprobantes, reportes, calendario, notificaciones y simulador. Moneda inicial **DOP (RD$)**, idioma español (RD).
+Aplicación móvil privada de finanzas del hogar para **Eudys y Mei**: presupuesto, gastos, aportaciones, pagos de servicios, vencimientos, fondos y caja chica, deudas y abonos, ahorros compartidos y personales, finanzas personales privadas, comprobantes, reportes, calendario, notificaciones y simulador. Moneda **DOP (RD$)**, español (RD).
 
 | | |
 |---|---|
 | App | React Native · Expo SDK 58 · Expo Router · TypeScript |
 | Estado | TanStack Query (caché persistente offline) · Zustand (preferencias, borradores, cola offline) |
-| Formularios | React Hook Form · Zod |
-| UI | Design system propio (tokens), Reanimated, Gesture Handler, SVG, Lucide |
-| Backend | Supabase: PostgreSQL + RLS, Auth, Storage privado, pg_cron, pg_net |
+| UI | Design system propio (tokens), Reanimated, SVG, Lucide |
+| Backend (autoalojado) | **PostgreSQL 17** (RLS, pg_cron) · **PostgREST** · **API Node** (auth JWT, comprobantes, push) · **Caddy** (HTTPS) |
 | Distribución | EAS Build (APK `preview`), EAS Update |
+
+## Estructura
+
+```
+src/            App móvil
+server/
+  docker-compose.yml   Postgres + PostgREST + API + Caddy
+  db/migrations/       Esquema, reglas contables, RLS, auditoría, cron
+  db/tests/            Pruebas pgTAP
+  api/                 Autenticación, comprobantes, push, migraciones
+tests/integration/     Pruebas contra el backend real
+docs/                  Arquitectura, base de datos, despliegue, diseño
+```
 
 ## Inicio rápido (desarrollo)
 
 ```bash
 npm install
-npx supabase start            # backend local en Docker (Postgres, Auth, Storage)
-npx supabase status -o env    # copia API_URL y ANON_KEY a .env.local (ver .env.example)
-npm run web                   # o: npx expo start  (Android requiere development build)
+cp server/.env.example server/.env      # completa secretos (ver docs/DEPLOY.md)
+npm run server:up                        # PostgreSQL + PostgREST + API + Caddy en Docker
+echo "EXPO_PUBLIC_API_URL=http://localhost:8088" > .env.local
+npm run web                              # o npx expo start con un development build
 ```
 
 ## Pruebas
 
 ```bash
-npm test                      # unitarias: cálculos de presupuesto, deudas, ahorros, aportes, simulador, reportes
-npm run test:integration      # integración contra Supabase local: gastos, pagos, abonos, fondos, comprobantes, privacidad
-npm run db:test               # pgTAP: reglas contables, RLS, privacidad, auditoría y endurecimiento (88 pruebas)
-npm run typecheck
+npm test                    # app: cálculos financieros + interfaz (34)
+npm run db:test             # pgTAP: reglas contables, RLS, privacidad, endurecimiento (88)
+npm run test:integration    # API real: datos, privacidad, comprobantes, autenticación (16)
+(cd server/api && npm test) # API: contraseñas, JWT, URLs firmadas, rutas seguras (6)
 ```
 
 ## Documentación
 
 - [Arquitectura](docs/ARCHITECTURE.md)
 - [Base de datos y reglas contables](docs/DATABASE.md)
-- [Instalación, despliegue y APK](docs/DEPLOY.md)
+- [Servidor, despliegue y APK](docs/DEPLOY.md)
 - [Sistema de diseño](docs/DESIGN.md)
 
 ## Seguridad
 
-- No hay secretos en el repositorio. La app solo usa la URL y la *anon key* públicas; toda autorización la aplica PostgreSQL con **Row Level Security**.
-- Las finanzas personales solo las ve su dueño (también en vistas, auditoría, notificaciones, exportaciones y comprobantes).
-- Los comprobantes viven en un bucket **privado** y se abren con URLs firmadas de 60–120 s.
+- Sin secretos en el repositorio: todo va en `server/.env` (ignorado por git).
+- La autorización la aplica PostgreSQL con **Row Level Security**; PostgREST y la API actúan como el usuario autenticado.
+- Las finanzas personales solo las ve su dueño (también en auditoría, notificaciones, exportaciones y comprobantes).
+- Comprobantes en disco privado del servidor, servidos solo con URLs firmadas (HMAC, 2 min) y validación del tipo real del archivo.
+- Contraseñas con scrypt; refresh tokens rotativos con detección de reutilización; límites de intentos.
 - Ningún registro financiero se borra: se **anula** con motivo y queda en auditoría.

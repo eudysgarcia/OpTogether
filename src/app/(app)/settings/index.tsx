@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { useHH } from '../../../api/household';
 import { Banner, Button, Card, ConfirmSheet, Divider, Header, type IconName, ListRow, Screen, SectionHeader, Segmented, Switch, Text } from '../../../components/ui';
 import { registerPush } from '../../../lib/notifications';
-import { supabase } from '../../../lib/supabase';
+import { auth } from '../../../lib/api';
 import { queryClient } from '../../../lib/queryClient';
 import { usePrefs, type ThemePreference } from '../../../store/prefs';
 import { toast } from '../../../store/toast';
@@ -68,7 +68,7 @@ export default function Settings() {
       </View>
       <Text variant="caption" color="textTertiary" align="center">OpTogether v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
       <ConfirmSheet visible={signOut} onClose={() => setSignOut(false)} title="Cerrar sesión" message="Los datos guardados en este teléfono se borrarán. Tus datos siguen seguros en el servidor." confirmLabel="Cerrar sesión" danger
-        onConfirm={async () => { setSignOut(false); queryClient.clear(); await supabase.auth.signOut(); }} />
+        onConfirm={async () => { setSignOut(false); queryClient.clear(); await auth.signOut(); }} />
     </Screen>
   );
 }

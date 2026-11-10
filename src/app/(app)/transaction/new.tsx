@@ -15,7 +15,7 @@ import { addMonthsYM, capitalize, currentYM, todayISO, ymLabel } from '../../../
 import { errorMessage } from '../../../lib/errors';
 import { TX_TYPE } from '../../../lib/labels';
 import { formatMoney, parseAmount } from '../../../lib/money';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/api';
 import { useDrafts } from '../../../store/drafts';
 import { toast } from '../../../store/toast';
 import { useTheme } from '../../../theme/ThemeProvider';
@@ -174,7 +174,7 @@ function NewTransaction({ params, billCycle }: { params: Params; billCycle?: Bil
     let periodId: string | null = null;
     if (f.type === 'contribution' && f.periodOffset === '1') {
       const next = addMonthsYM(currentYM(), 1);
-      const r = await supabase.rpc('ensure_period', { hid, p_year: next.year, p_month: next.month });
+      const r = await db.rpc('ensure_period', { hid, p_year: next.year, p_month: next.month });
       periodId = (r.data as string) ?? null;
     }
     const usesFundOut = ['expense', 'transfer', 'withdrawal', 'savings_deposit', 'debt_payment'].includes(f.type);

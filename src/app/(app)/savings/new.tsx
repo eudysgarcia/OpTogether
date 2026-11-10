@@ -6,7 +6,7 @@ import { Button, DateField, Header, Input, Loading, Screen, Select, Switch } fro
 import { addMonthsISO, todayISO } from '../../../lib/dates';
 import { GOAL_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import type { Scope } from '../../../types/models';
 
 type GoalFormState = { name: string; kind: string; target: string; hasDate: boolean; date: string; commitments: Record<string, string> };
@@ -28,8 +28,8 @@ function GoalForm({ id, scope, initial }: { id?: string; scope: Scope; initial?:
     async () => {
       const commitments = Object.fromEntries(Object.entries(f.commitments).map(([k, v]) => [k, parseAmount(v) ?? 0]).filter(([, v]) => (v as number) > 0));
       const row = { name: f.name.trim(), kind: f.kind, icon: GOAL_KIND[f.kind].icon, target_amount: parseAmount(f.target) || null, target_date: f.hasDate ? f.date : null, commitments };
-      if (id) return unwrap(await supabase.from('savings_goals').update(row).eq('id', id).select('id').single());
-      return unwrap(await supabase.from('savings_goals').insert({ ...row, household_id: hid, scope }).select('id').single());
+      if (id) return unwrap(await db.from('savings_goals').update(row).eq('id', id).select('id').single());
+      return unwrap(await db.from('savings_goals').insert({ ...row, household_id: hid, scope }).select('id').single());
     },
     { success: id ? 'Meta actualizada' : 'Meta creada', onSuccess: (r) => (id ? router.back() : router.replace(`/savings/${r!.id}`)) },
   );

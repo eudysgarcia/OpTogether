@@ -1,12 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from 'expo-router';
-import * as Linking from 'expo-linking';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Banner, Button, Header, Input, Screen, Text } from '../../components/ui';
 import { errorMessage } from '../../lib/errors';
-import { supabase } from '../../lib/supabase';
+import { auth } from '../../lib/api';
 
 const schema = z
   .object({
@@ -18,28 +16,16 @@ const schema = z
 
 export default function SignUp() {
   const [error, setError] = useState<string>();
-  const [sent, setSent] = useState(false);
   const { control, handleSubmit, formState } = useForm({ resolver: zodResolver(schema), defaultValues: { email: '', password: '', confirm: '' } });
 
   const onSubmit = handleSubmit(async (v) => {
     setError(undefined);
-    const { data, error: e } = await supabase.auth.signUp({
-      email: v.email,
-      password: v.password,
-      options: { emailRedirectTo: Linking.createURL('/sign-in') },
-    });
-    if (e) return setError(errorMessage(e));
-    if (!data.session) setSent(true);
+    try {
+      await auth.signUp(v.email.trim().toLowerCase(), v.password);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
   });
-
-  if (sent) {
-    return (
-      <Screen header={<Header title="Revisa tu correo" back />}>
-        <Banner tone="success" title="Cuenta creada" message="Te enviamos un enlace de confirmación. Ábrelo desde este teléfono y luego inicia sesión." />
-        <Button title="Ir a iniciar sesión" onPress={() => router.replace('/sign-in')} />
-      </Screen>
-    );
-  }
 
   return (
     <Screen header={<Header title="Crear cuenta" back />}>

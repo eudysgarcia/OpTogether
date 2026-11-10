@@ -5,7 +5,7 @@ import { useHH } from '../../../api/household';
 import { Banner, Button, Header, Input, Screen, Select, Switch, Text } from '../../../components/ui';
 import { capitalize, ymLabel } from '../../../lib/dates';
 import { parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 
 /** Agrega una categoría al presupuesto del mes (recurrente o extraordinaria). */
 export default function AddAllocation() {
@@ -21,7 +21,7 @@ export default function AddAllocation() {
   const used = new Set((allocs.data ?? []).map((a) => a.category_id));
   const options = (cats.data ?? []).filter((c) => c.scope === 'household' && !c.parent_id && c.kind !== 'income' && !used.has(c.id)).map((c) => ({ value: c.id, label: c.name, icon: c.icon, color: c.color }));
   const save = useFinanceMutation(
-    async () => unwrap(await supabase.from('budget_allocations').insert({
+    async () => unwrap(await db.from('budget_allocations').insert({
       household_id: hid, period_id: period.data!, category_id: cat!, amount: parseAmount(amount) ?? 0, is_recurring: recurring,
       shares: Object.fromEntries(members.map((m) => [m.id, 100 / members.length])),
     }).select('id').single()),

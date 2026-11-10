@@ -1,101 +1,105 @@
-# Instalación, despliegue y APK
+# Servidor, despliegue y APK
 
-## 1. Backend (Supabase)
+## 1. Requisitos del servidor
 
-### Opción A — Supabase en la nube (recomendado para usar el APK)
+- Linux (Ubuntu 22.04/24.04 o similar) con **Docker** y **Docker Compose v2**.
+- 1 vCPU · 1–2 GB RAM · 20 GB disco son suficientes para dos personas.
+- Puertos **80 y 443** abiertos.
+- Un **dominio** (o subdominio) apuntando a la IP del servidor, p. ej. `finanzas.tu-dominio.com`.
+  Sin dominio puedes usar `<ip-con-guiones>.sslip.io` (p. ej. `203-0-113-10.sslip.io`).
+  > Android bloquea HTTP sin cifrar en apps instaladas: el APK necesita **HTTPS** (Caddy lo obtiene solo).
 
-1. Crea un proyecto en <https://supabase.com/dashboard> (región cercana, p. ej. `us-east-1`).
-2. En tu terminal:
-   ```bash
-   npx supabase login                         # abre el navegador; una sola vez
-   npx supabase link --project-ref <REF>      # REF = el id del proyecto (xxxx de xxxx.supabase.co)
-   npx supabase db push                       # aplica las 3 migraciones (esquema, RLS, storage, cron)
-   ```
-3. En el dashboard del proyecto:
-   - **Database → Extensions**: verifica que `pg_cron` y `pg_net` estén activas (la migración las crea).
-   - **Authentication → URL Configuration**: `Site URL = optogether://` y agrega a *Redirect URLs*
-     `optogether://**` (para confirmar correo y recuperar contraseña desde el teléfono).
-   - **Authentication → Providers → Email**: deja *Confirm email* activado (recomendado).
-   - **Storage**: el bucket `receipts` lo crea la migración como **privado**. No lo hagas público.
-4. Copia de **Project Settings → API**: la *Project URL* y la clave *anon / publishable*.
-   **Nunca** uses ni compartas la `service_role`.
-
-### Opción B — Local (desarrollo)
+## 2. Instalar el backend
 
 ```bash
-npx supabase start
-npx supabase status -o env   # API_URL y ANON_KEY → .env.local
+git clone https://github.com/eudysgarcia/OpTogether.git
+cd OpTogether/server
+cp .env.example .env
+nano .env        # DOMAIN, PUBLIC_URL y los 4 secretos (openssl rand -base64 48)
+docker compose up -d --build
+docker compose logs migrate     # debe terminar en "Migraciones al día."
+curl https://TU-DOMINIO/health  # {"ok":true}
 ```
 
-## 2. Variables de entorno
+Servicios: `db` (PostgreSQL 17 + pg_cron), `migrate` (aplica migraciones y sale), `rest` (PostgREST),
+`api` (autenticación, comprobantes, push), `caddy` (HTTPS). La base de datos **no** se expone a Internet.
 
-| Variable | Dónde | Descripción |
-|---|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | `.env.local` / EAS env | URL del proyecto |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` / EAS env | Clave pública (anon) |
+### Variables (`server/.env`)
 
-Para builds en EAS:
-```bash
-npx eas-cli env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value https://<REF>.supabase.co --visibility plaintext
-npx eas-cli env:create --environment preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <ANON_KEY> --visibility plaintext
-```
-(repite con `--environment production` si haces builds de producción).
+| Variable | Descripción |
+|---|---|
+| `DOMAIN` | Dominio público (Caddy emite el certificado) |
+| `PUBLIC_URL` | `https://` + dominio (para URLs firmadas de comprobantes) |
+| `POSTGRES_PASSWORD`, `AUTHENTICATOR_PASSWORD`, `API_DB_PASSWORD` | Contraseñas de la base de datos |
+| `JWT_SECRET` | Firma de sesiones (≥ 32 caracteres). Cambiarlo cierra todas las sesiones |
+| `SIGNUP_ALLOWLIST` | Correos autorizados a registrarse (recomendado: los de Eudys y Mei) |
+| `SMTP_*` | Opcional: correo para recuperar contraseña con código de 6 dígitos |
+| `EXPO_ACCESS_TOKEN` | Opcional: si activas seguridad reforzada de Expo Push |
 
-> Si un APK se compiló **sin** estas variables, al abrirlo muestra la pantalla **“Conecta tu servidor”**:
-> pega allí la URL y la anon key una sola vez y queda guardado en el teléfono.
-
-## 3. Ejecutar en desarrollo
+### Operación
 
 ```bash
-npm install
-npm run web                      # navegador
-npx expo start                   # con un development build en el teléfono
-npx eas-cli build -p android --profile development   # crea el development build (una vez)
-```
-
-## 4. APK (EAS Build)
-
-```bash
-npx eas-cli build -p android --profile preview       # genera un APK instalable
-```
-El enlace de descarga aparece al final y en <https://expo.dev/accounts/xeya/projects/optogether/builds>.
-
-### Instalar el APK en Android
-1. Abre el enlace del build en el teléfono y descarga el `.apk` (o escanea el QR de la página del build).
-2. Android pedirá permitir “Instalar apps desconocidas” para el navegador → **Permitir**.
-3. Abre el archivo y pulsa **Instalar**.
-
-### Actualizaciones OTA
-Cambios solo de JavaScript se pueden publicar sin reinstalar:
-```bash
-npx eas-cli update --channel preview --message "Descripción del cambio"
+docker compose ps                                   # estado
+docker compose logs -f api                          # registros
+git pull && docker compose up -d --build            # actualizar (aplica migraciones nuevas)
+docker compose exec api node src/cli.mjs list-users
+docker compose exec api node src/cli.mjs reset-password correo@ejemplo.com   # contraseña temporal sin SMTP
 ```
 
-## 5. Notificaciones push (Android)
-
-Las notificaciones **dentro de la app** y los **recordatorios locales** funcionan sin configuración.
-Para push remotas en Android, Expo exige credenciales de Firebase Cloud Messaging:
-
-1. Crea un proyecto en Firebase, agrega una app Android con el paquete `com.eudysgarcia.optogether`
-   y descarga `google-services.json` a la raíz del proyecto (está en `.gitignore`).
-2. Agrega a `app.json` → `android.googleServicesFile: "./google-services.json"`.
-3. Sube la clave de cuenta de servicio FCM V1: `npx eas-cli credentials` → Android → *Google Service Account* → *FCM V1*.
-4. Recompila el APK.
-
-## 6. Primer uso: Eudys y Mei
-
-1. **Eudys** instala la app → *Crear cuenta* → confirma el correo → inicia sesión.
-2. *Crear nuestro hogar*: el asistente viene precargado con los ingresos (Eudys RD$42,550 · Mei RD$16,180),
-   el presupuesto (RD$37,500), la distribución 25/75 y 50/50, y el ahorro conjunto (RD$1,000 + RD$1,000).
-   Revisa/ajusta y pulsa **Crear hogar**. Todo se puede modificar después.
-3. **Más → Configuración → Miembros → Invitar a Mei** → comparte el código de 8 caracteres.
-4. **Mei** instala la app → *Crear cuenta* → *Tengo un código de invitación* → introduce el código.
-
-## 7. Pruebas
+### Copias de seguridad
 
 ```bash
-npm test                  # unitarias + UI
-npm run test:integration  # requiere `npx supabase start` y .env.local
-npm run db:test           # pgTAP
-npm run typecheck && npx eslint src tests
+# Base de datos (diaria, p. ej. con cron del sistema)
+docker compose exec -T db pg_dump -U postgres -Fc optogether > respaldo-$(date +%F).dump
+# Comprobantes
+docker run --rm -v optogether_receipts:/d -v "$PWD":/b alpine tar czf /b/comprobantes-$(date +%F).tgz -C /d .
+# Restaurar la base
+docker compose exec -T db pg_restore -U postgres -d optogether --clean < respaldo.dump
+```
+
+## 3. Conectar la app
+
+- **APK ya instalado**: al abrirlo por primera vez aparece *“Conecta tu servidor”* → escribe `https://TU-DOMINIO`.
+  La app comprueba `/health` y lo guarda.
+- **Compilar con la dirección incluida** (no pide nada al abrir):
+  ```bash
+  npx eas-cli env:create --environment preview --name EXPO_PUBLIC_API_URL --value https://TU-DOMINIO --visibility plaintext
+  npx eas-cli build -p android --profile preview
+  ```
+
+## 4. Desarrollo local
+
+```bash
+cp server/.env.example server/.env    # DOMAIN=:80  HTTP_PORT=8088  PUBLIC_URL=http://localhost:8088 + secretos
+npm run server:up
+echo "EXPO_PUBLIC_API_URL=http://localhost:8088" > .env.local
+npm run web
+```
+
+## 5. APK (EAS Build)
+
+```bash
+npx eas-cli build -p android --profile preview      # APK instalable
+npx eas-cli update --channel preview --environment preview --message "..."   # cambios JS sin reinstalar
+```
+Instalar: abre el enlace del build en el teléfono → permite “Instalar apps desconocidas” → Instalar.
+
+## 6. Notificaciones push (Android)
+
+Funcionan sin configuración: bandeja dentro de la app y recordatorios locales del teléfono.
+Para push remotas Expo exige Firebase Cloud Messaging:
+1. Proyecto Firebase → app Android `com.eudysgarcia.optogether` → descarga `google-services.json` a la raíz (está en `.gitignore`).
+2. `app.json` → `android.googleServicesFile: "./google-services.json"`.
+3. `npx eas-cli credentials` → Android → Google Service Account → FCM V1. Recompila el APK.
+
+## 7. Primer uso: Eudys y Mei
+
+1. **Eudys**: *Crear cuenta* → *Crear nuestro hogar* (valores iniciales precargados y editables) → **Crear hogar**.
+2. Más → Configuración → Miembros → **Invitar a Mei** → comparte el código de 8 caracteres.
+3. **Mei**: *Crear cuenta* → *Tengo un código de invitación*.
+
+## 8. Pruebas
+
+```bash
+npm test && npm run db:test && npm run test:integration && (cd server/api && npm test)
 ```

@@ -7,7 +7,7 @@ import { TxRow } from '../../../components/finance';
 import { Button, Card, ConfirmSheet, EmptyState, Header, IconButton, IconTile, KeyValue, Loading, Money, Screen, SectionHeader, Text } from '../../../components/ui';
 import { FUND_KIND } from '../../../lib/labels';
 import { formatMoney } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 import type { Scope } from '../../../types/models';
 
@@ -21,7 +21,7 @@ export default function FundDetail() {
   const txs = useTransactions({ fundId: id, scope: f?.scope as Scope | undefined, limit: 200 }, !!f);
   const [archive, setArchive] = useState(false);
   const arch = useFinanceMutation(
-    async () => unwrap(await supabase.from('funds').update({ archived_at: f?.archived_at ? null : new Date().toISOString() }).eq('id', id!).select('id')),
+    async () => unwrap(await db.from('funds').update({ archived_at: f?.archived_at ? null : new Date().toISOString() }).eq('id', id!).select('id')),
     { success: 'Fondo actualizado', onSuccess: () => setArchive(false) },
   );
   if (!f) return <Screen header={<Header title="Fondo" back />}><Loading /></Screen>;

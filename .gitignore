@@ -59,3 +59,7 @@ supabase/.env
 # herramientas locales
 .claude/
 coverage/
+
+# backend autoalojado
+server/.env
+server/api/node_modules/

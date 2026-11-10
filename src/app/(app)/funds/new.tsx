@@ -5,7 +5,7 @@ import { useHH } from '../../../api/household';
 import { Banner, Button, Header, Input, Loading, Screen, Select } from '../../../components/ui';
 import { FUND_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import type { Scope } from '../../../types/models';
 
 type FundFormState = { name: string; kind: string; initial: string; responsible: string | null };
@@ -25,8 +25,8 @@ function FundForm({ id, scope, initialState }: { id?: string; scope: Scope; init
   const save = useFinanceMutation(
     async () => {
       const row = { name: f.name.trim(), kind: f.kind, icon: FUND_KIND[f.kind].icon, initial_balance: parseAmount(f.initial) ?? 0, responsible_member_id: f.responsible };
-      if (id) return unwrap(await supabase.from('funds').update(row).eq('id', id).select('id').single());
-      return unwrap(await supabase.from('funds').insert({ ...row, household_id: hid, scope }).select('id').single());
+      if (id) return unwrap(await db.from('funds').update(row).eq('id', id).select('id').single());
+      return unwrap(await db.from('funds').insert({ ...row, household_id: hid, scope }).select('id').single());
     },
     { success: id ? 'Fondo actualizado' : 'Fondo creado', onSuccess: (r) => (id ? router.back() : router.replace(`/funds/${r!.id}`)) },
   );

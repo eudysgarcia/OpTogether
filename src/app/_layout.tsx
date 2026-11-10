@@ -45,7 +45,7 @@ export default function RootLayout() {
 function RootNavigator() {
   const { colors, dark } = useTheme();
   const { session, loading } = useAuth();
-  useBackend((s) => s.url + s.anonKey); // re-render al configurar el backend
+  useBackend((s) => s.url); // re-render al configurar el backend
   const configured = backendConfigured();
   const hh = useHousehold();
   const hasHousehold = !!hh.data?.household;
@@ -79,7 +79,6 @@ function RootNavigator() {
         <Stack.Protected guard={configured && !!session && hasHousehold} redirectTo={home}>
           <Stack.Screen name="(app)" />
         </Stack.Protected>
-        <Stack.Screen name="reset-password" />
       </Stack>
     </>
   );

@@ -8,7 +8,7 @@ import { Banner, Button, Card, Divider, EmptyState, ErrorState, Header, IconButt
 import { summarizeBudget, allocationFigures } from '../../../domain/budget';
 import { currentYM } from '../../../lib/dates';
 import { formatPct } from '../../../lib/money';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/api';
 import { invalidateFinance } from '../../../lib/queryClient';
 import { errorMessage } from '../../../lib/errors';
 import { toast } from '../../../store/toast';
@@ -31,7 +31,7 @@ export default function Budget() {
   const copyPrevious = async () => {
     if (!period.data) return;
     setCopying(true);
-    const r = await supabase.rpc('copy_previous_budget', { p_period: period.data });
+    const r = await db.rpc('copy_previous_budget', { p_period: period.data });
     setCopying(false);
     if (r.error) return toast.error('No se pudo copiar', errorMessage(r.error));
     toast.success(r.data ? `${r.data} categoría(s) copiada(s)` : 'El presupuesto ya estaba completo');

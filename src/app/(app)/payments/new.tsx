@@ -6,7 +6,7 @@ import { useHH } from '../../../api/household';
 import { Button, Chip, ChipRow, Header, Input, Loading, Screen, Segmented, Select, Switch, Text } from '../../../components/ui';
 import { BILL_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 
 const OFFSETS = [10, 5, 3, 1, 0, -1, -3];
@@ -39,8 +39,8 @@ function BillForm({ id, initial }: { id?: string; initial?: BillFormState }) {
         name: f.name.trim(), provider: f.provider.trim() || null, kind: f.kind, category_id: f.categoryId!, estimated_amount: parseAmount(f.amount) ?? 0,
         amount_type: f.amountType, due_day: day, frequency: f.frequency, responsible_member_id: f.responsible, reminder_offsets: [...f.offsets].sort((a, b) => b - a), active: f.active,
       };
-      if (id) return unwrap(await supabase.from('bills').update(row).eq('id', id).select('id').single());
-      return unwrap(await supabase.from('bills').insert({ ...row, household_id: hid, scope: 'household' }).select('id').single());
+      if (id) return unwrap(await db.from('bills').update(row).eq('id', id).select('id').single());
+      return unwrap(await db.from('bills').insert({ ...row, household_id: hid, scope: 'household' }).select('id').single());
     },
     { success: id ? 'Servicio actualizado' : 'Servicio creado', onSuccess: (r) => (id ? router.back() : router.replace(`/payments/${r!.id}`)) },
   );

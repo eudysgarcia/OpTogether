@@ -8,7 +8,7 @@ import { Banner, Button, Card, ConfirmSheet, DateField, Divider, EmptyState, Err
 import { FREQUENCY_LABEL, formatDate, type Frequency } from '../../../lib/dates';
 import { BILL_KIND, BILL_STATUS_UI } from '../../../lib/labels';
 import { formatMoney } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 import type { BillCycleRow as Cycle } from '../../../types/models';
 
@@ -27,13 +27,13 @@ export default function BillDetail() {
   const cycleIds = new Set((cycles.data ?? []).map((c) => c.id));
   const billPayments = (payments.data ?? []).filter((t) => t.bill_cycle_id && cycleIds.has(t.bill_cycle_id));
 
-  const nextCycle = useFinanceMutation(async () => unwrap(await supabase.rpc('create_next_bill_cycle', { p_bill: id! })), { success: 'Siguiente ciclo creado' });
+  const nextCycle = useFinanceMutation(async () => unwrap(await db.rpc('create_next_bill_cycle', { p_bill: id! })), { success: 'Siguiente ciclo creado' });
   const reschedule = useFinanceMutation(
-    async (v: { id: string; date: string }) => unwrap(await supabase.from('bill_cycles').update({ due_date: v.date }).eq('id', v.id).select('id')),
+    async (v: { id: string; date: string }) => unwrap(await db.from('bill_cycles').update({ due_date: v.date }).eq('id', v.id).select('id')),
     { success: 'Vencimiento reprogramado', onSuccess: () => setResched(null) },
   );
   const cancelCycle = useFinanceMutation(
-    async (v: { id: string; note: string }) => unwrap(await supabase.from('bill_cycles').update({ cancelled_at: new Date().toISOString(), note: v.note }).eq('id', v.id).select('id')),
+    async (v: { id: string; note: string }) => unwrap(await db.from('bill_cycles').update({ cancelled_at: new Date().toISOString(), note: v.note }).eq('id', v.id).select('id')),
     { success: 'Ciclo cancelado', onSuccess: () => setCancel(null) },
   );
 

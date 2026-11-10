@@ -9,7 +9,7 @@ import { installmentSchedule, payoffDate, simulatePayoff } from '../../../domain
 import { FREQUENCY_LABEL, formatDate, relativeDays, todayISO, type Frequency } from '../../../lib/dates';
 import { DEBT_KIND } from '../../../lib/labels';
 import { formatMoney, formatPct, parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { space } from '../../../theme/tokens';
 
@@ -22,7 +22,7 @@ export default function DebtDetail() {
   const [extra, setExtra] = useState('');
   const [archive, setArchive] = useState(false);
   const arch = useFinanceMutation(
-    async () => unwrap(await supabase.from('debts').update({ status: q.data?.status === 'archived' ? 'active' : 'archived' }).eq('id', id!).select('id')),
+    async () => unwrap(await db.from('debts').update({ status: q.data?.status === 'archived' ? 'active' : 'archived' }).eq('id', id!).select('id')),
     { success: 'Deuda actualizada', onSuccess: () => setArchive(false) },
   );
 

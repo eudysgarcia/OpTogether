@@ -1,0 +1,26 @@
+# DOMAIN = "finanzas.midominio.com" → HTTPS automático (Let's Encrypt)
+# DOMAIN = ":80" o "http://localhost" → solo HTTP (desarrollo)
+{$DOMAIN} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	handle_path /rest/* {
+		reverse_proxy rest:3000
+	}
+	handle /auth/* {
+		reverse_proxy api:8080
+	}
+	handle /files/* {
+		reverse_proxy api:8080
+	}
+	handle /health {
+		reverse_proxy api:8080
+	}
+	handle {
+		respond "OpTogether API" 200
+	}
+}

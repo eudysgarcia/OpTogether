@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Isotype, Wordmark } from '../../components/brand/Logo';
 import { Banner, Button, Input, Screen, Text } from '../../components/ui';
 import { errorMessage } from '../../lib/errors';
-import { supabase } from '../../lib/supabase';
+import { auth } from '../../lib/api';
 import { space } from '../../theme/tokens';
 
 const schema = z.object({
@@ -22,8 +22,11 @@ export default function SignIn() {
 
   const onSubmit = handleSubmit(async (v) => {
     setError(undefined);
-    const { error: e } = await supabase.auth.signInWithPassword({ email: v.email, password: v.password });
-    if (e) setError(errorMessage(e));
+    try {
+      await auth.signIn(v.email, v.password);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
   });
 
   return (

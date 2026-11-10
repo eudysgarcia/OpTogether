@@ -4,7 +4,7 @@ import { useCategories, useFinanceMutation, useFunds } from '../../../api/financ
 import { useHH } from '../../../api/household';
 import { Button, Card, Divider, Header, IconButton, IconTile, Input, ListRow, PICKABLE_ICONS, Pressable, Screen, Segmented, Select, Sheet, Switch, Text } from '../../../components/ui';
 import { CHART_COLORS } from '../../../components/charts/Charts';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { radius, space } from '../../../theme/tokens';
 import type { Category } from '../../../types/models';
@@ -24,10 +24,10 @@ export default function Categories() {
   const save = useFinanceMutation(async () => {
     const f = form!;
     const row = { name: f.name.trim(), icon: f.icon, color: f.color, kind: f.kind, parent_id: f.parent, is_variable: f.variable, linked_fund_id: f.personal ? null : f.fund };
-    if (f.id) return unwrap(await supabase.from('categories').update(row).eq('id', f.id).select('id'));
-    return unwrap(await supabase.from('categories').insert({ ...row, household_id: hid, scope: f.personal ? 'personal' : 'household' }).select('id'));
+    if (f.id) return unwrap(await db.from('categories').update(row).eq('id', f.id).select('id'));
+    return unwrap(await db.from('categories').insert({ ...row, household_id: hid, scope: f.personal ? 'personal' : 'household' }).select('id'));
   }, { success: 'Categoría guardada', onSuccess: () => setForm(null) });
-  const archive = useFinanceMutation(async (c: Category) => unwrap(await supabase.from('categories').update({ archived_at: c.archived_at ? null : new Date().toISOString() }).eq('id', c.id).select('id')), { success: 'Categoría actualizada' });
+  const archive = useFinanceMutation(async (c: Category) => unwrap(await db.from('categories').update({ archived_at: c.archived_at ? null : new Date().toISOString() }).eq('id', c.id).select('id')), { success: 'Categoría actualizada' });
   const open = (c?: Category) => setForm(c ? { id: c.id, name: c.name, icon: c.icon, color: c.color, kind: c.kind, parent: c.parent_id, variable: c.is_variable, fund: c.linked_fund_id, personal: c.scope === 'personal' } : { ...EMPTY });
   return (
     <Screen header={<Header title="Categorías" back right={<IconButton icon="plus" label="Nueva categoría" onPress={() => open()} />} />}>

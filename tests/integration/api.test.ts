@@ -1,32 +1,44 @@
 /**
- * Pruebas de integración contra un Supabase real (local: `npx supabase start`).
- * Ejecutar: npm run test:integration
- * Usa la URL/anon key de .env.local. Crea usuarios de prueba aislados por ejecución.
+ * Pruebas de integración contra el backend autoalojado (PostgreSQL + PostgREST + API).
+ * Requiere la pila local:  cd server && docker compose up -d
+ * Ejecutar: npm run test:integration   (TEST_API_URL, por defecto http://localhost:8088)
  */
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
+import { PostgrestClient } from '@supabase/postgrest-js';
 import type { Database } from '../../src/types/database';
 
-const env = Object.fromEntries(
-  readFileSync('.env.local', 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => {
-    const i = l.indexOf('=');
-    return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, '')];
-  }),
-);
-const URL_ = env.EXPO_PUBLIC_SUPABASE_URL;
-const KEY = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-type C = SupabaseClient<Database>;
+const API = (process.env.TEST_API_URL ?? 'http://localhost:8088').replace(/\/+$/, '');
+type C = PostgrestClient<Database>;
 const run = Date.now();
 
-async function user(name: string): Promise<{ c: C; id: string }> {
-  const c = createClient<Database>(URL_, KEY, { auth: { persistSession: false } });
-  const { data, error } = await c.auth.signUp({ email: `${name}.${run}@test.local`, password: 'Prueba1234' });
-  if (error) throw error;
-  return { c, id: data.user!.id };
+async function post(path: string, json: unknown, token?: string) {
+  const res = await fetch(`${API}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(json) });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+
+async function user(name: string): Promise<{ c: C; id: string; token: string }> {
+  const r = await post('/auth/signup', { email: `${name}.${run}@test.local`, password: 'Prueba1234' });
+  if (r.status !== 201) throw new Error(JSON.stringify(r.body));
+  const token = r.body.access_token as string;
+  const c = new PostgrestClient<Database>(`${API}/rest`, { headers: { Authorization: `Bearer ${token}` } });
+  return { c, id: r.body.user.id, token };
 }
 const ok = <T>(r: { data: T; error: unknown }) => { if (r.error) throw r.error; return r.data as NonNullable<T>; };
 
-let eudys: { c: C; id: string }, mei: { c: C; id: string }, extra: { c: C; id: string };
+async function upload(token: string, hid: string, txId: string, bytes: Buffer, name: string, type: string) {
+  const form = new FormData();
+  form.append('householdId', hid);
+  form.append('transactionId', txId);
+  form.append('file', new Blob([new Uint8Array(bytes)], { type }), name);
+  const res = await fetch(`${API}/files/upload`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+const signed = async (token: string, path: string) => {
+  const res = await fetch(`${API}/files/url?path=${encodeURIComponent(path)}`, { headers: { Authorization: `Bearer ${token}` } });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+};
+const PNG = Buffer.from('89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D49444154789C6360000002000154A24F5D0000000049454E44AE426082', 'hex');
+
+let eudys: { c: C; id: string; token: string }, mei: { c: C; id: string; token: string }, extra: { c: C; id: string; token: string };
 let hid: string, meiMember: string, eudysMember: string, catSuper: string, fundCommon: string, fundPetty: string, goal: string, allocSuper: string;
 
 beforeAll(async () => {
@@ -97,20 +109,22 @@ test('crear ahorro y aportar (no es gasto)', async () => {
 
 test('adjuntar comprobante privado y abrirlo con URL firmada', async () => {
   const tx = ok(await eudys.c.from('transactions').insert({ household_id: hid, type: 'expense', amount: 100, description: 'Con recibo', category_id: catSuper }).select('id').single());
-  const path = `${hid}/${tx.id}/recibo.png`;
-  const png = Buffer.from('89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D49444154789C6360000002000154A24F5D0000000049454E44AE426082', 'hex');
-  ok(await eudys.c.storage.from('receipts').upload(path, png, { contentType: 'image/png' }));
-  ok(await eudys.c.from('transaction_attachments').insert({ household_id: hid, transaction_id: tx.id, storage_path: path, file_name: 'recibo.png', mime_type: 'image/png', size_bytes: png.length }));
-  // Mei (mismo hogar) puede verlo
-  const signed = ok(await mei.c.storage.from('receipts').createSignedUrl(path, 60));
-  const res = await fetch(signed.signedUrl);
+  const up = await upload(eudys.token, hid, tx.id, PNG, 'recibo.png', 'image/png');
+  expect(up.status).toBe(201);
+  const path = up.body.storage_path as string;
+  // Mei (mismo hogar) puede verlo con URL firmada
+  const s1 = await signed(mei.token, path);
+  expect(s1.status).toBe(200);
+  const res = await fetch(s1.body.url.replace(/^https?:\/\/[^/]+/, API));
   expect(res.status).toBe(200);
-  // El bucket no es público
-  const pub = await fetch(`${URL_}/storage/v1/object/public/receipts/${path}`);
-  expect(pub.status).toBeGreaterThanOrEqual(400);
-  // Un externo no puede firmar ni descargar
-  const ext = await extra.c.storage.from('receipts').createSignedUrl(path, 60);
-  expect(ext.error).toBeTruthy();
+  expect(Buffer.from(await res.arrayBuffer()).equals(PNG)).toBe(true);
+  // Sin firma o con firma alterada no se abre
+  expect((await fetch(`${API}/files/raw/${path}`)).status).toBe(403);
+  expect((await fetch(s1.body.url.replace(/^https?:\/\/[^/]+/, API).replace(/sig=[^&]+/, 'sig=x'))).status).toBe(403);
+  // Un externo no puede firmar
+  expect((await signed(extra.token, path)).status).toBe(403);
+  // Se rechaza un archivo cuyo contenido no coincide con el tipo
+  expect((await upload(eudys.token, hid, tx.id, Buffer.from('<script>alert(1)</script>'), 'x.png', 'image/png')).status).toBe(415);
 });
 
 test('consultar reportes: vista de presupuesto con gasto real correcto', async () => {
@@ -140,10 +154,11 @@ describe('seguridad y privacidad', () => {
     expect(await spentSuper(eudys.c)).toBe(2600);
   });
   test('comprobantes personales no se pueden abrir sin autorización', async () => {
-    const path = `${hid}/${meiPersonal}/p.png`;
-    ok(await mei.c.storage.from('receipts').upload(path, Buffer.from('x'), { contentType: 'image/png' }));
-    const r = await eudys.c.storage.from('receipts').createSignedUrl(path, 60);
-    expect(r.error).toBeTruthy();
+    const up = await upload(mei.token, hid, meiPersonal, PNG, 'p.png', 'image/png');
+    expect(up.status).toBe(201);
+    expect((await signed(eudys.token, up.body.storage_path)).status).toBe(403);
+    // Eudys tampoco puede subir archivos a un movimiento personal de Mei
+    expect((await upload(eudys.token, hid, meiPersonal, PNG, 'q.png', 'image/png')).status).toBe(403);
   });
   test('un usuario externo no puede acceder al hogar', async () => {
     expect(ok(await extra.c.from('households').select('*'))).toHaveLength(0);
@@ -161,5 +176,38 @@ describe('seguridad y privacidad', () => {
     expect(log.actor).toBe(mei.id);
     const inv = await mei.c.rpc('create_invite');
     expect(inv.error?.message).toContain('SOLO_ADMIN');
+  });
+  test('sin token no hay acceso a datos', async () => {
+    const anon = new PostgrestClient<Database>(`${API}/rest`);
+    expect((await anon.from('transactions').select('id')).error).toBeTruthy();
+    const forged = new PostgrestClient<Database>(`${API}/rest`, { headers: { Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4Iiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQifQ.invalida' } });
+    expect((await forged.from('transactions').select('id')).error).toBeTruthy();
+  });
+});
+
+describe('autenticación', () => {
+  const email = `auth.${run}@test.local`;
+  let refresh = '';
+  test('registro, credenciales inválidas y rotación de refresh token', async () => {
+    const su = await post('/auth/signup', { email, password: 'Prueba1234' });
+    expect(su.status).toBe(201);
+    expect((await post('/auth/signup', { email, password: 'Prueba1234' })).status).toBe(409);
+    expect((await post('/auth/signup', { email: `weak.${run}@test.local`, password: 'corta' })).status).toBe(400);
+    expect((await post('/auth/token', { email, password: 'Incorrecta1' })).body.message).toBe('Invalid login credentials');
+    const li = await post('/auth/token', { email, password: 'Prueba1234' });
+    expect(li.status).toBe(200);
+    refresh = li.body.refresh_token;
+    const r1 = await post('/auth/refresh', { refresh_token: refresh });
+    expect(r1.status).toBe(200);
+    // Reusar un refresh ya rotado revoca todas las sesiones (detección de robo)
+    expect((await post('/auth/refresh', { refresh_token: refresh })).status).toBe(401);
+    expect((await post('/auth/refresh', { refresh_token: r1.body.refresh_token })).status).toBe(401);
+  });
+  test('cambio de contraseña exige la actual', async () => {
+    const li = await post('/auth/token', { email, password: 'Prueba1234' });
+    const put = (json: unknown) => fetch(`${API}/auth/user`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${li.body.access_token}` }, body: JSON.stringify(json) });
+    expect((await put({ current_password: 'mala', password: 'Nueva12345' })).status).toBe(400);
+    expect((await put({ current_password: 'Prueba1234', password: 'Nueva12345' })).status).toBe(200);
+    expect((await post('/auth/token', { email, password: 'Nueva12345' })).status).toBe(200);
   });
 });

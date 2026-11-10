@@ -1,6 +1,8 @@
 -- Pruebas del endurecimiento de seguridad.
 begin;
 create extension if not exists pgtap with schema extensions;
+set search_path = public, extensions;
+grant usage on schema extensions to authenticated;
 select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)

@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Isotype } from '../../components/brand/Logo';
 import { Button, Card, Icon, Screen, Text } from '../../components/ui';
-import { supabase } from '../../lib/supabase';
+import { auth } from '../../lib/api';
 import { useTheme } from '../../theme/ThemeProvider';
 import { space } from '../../theme/tokens';
 
@@ -42,7 +42,7 @@ export default function OnboardingStart() {
           <Icon name="chevron-right" color={colors.textTertiary} />
         </View>
       </Card>
-      <Button title="Cerrar sesión" variant="ghost" icon="logout" onPress={() => supabase.auth.signOut()} />
+      <Button title="Cerrar sesión" variant="ghost" icon="logout" onPress={() => auth.signOut()} />
     </Screen>
   );
 }

@@ -1,0 +1,25 @@
+{
+  "name": "optogether-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "OpTogether: autenticación, comprobantes, push y migraciones sobre PostgreSQL + PostgREST",
+  "main": "src/index.mjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "migrate": "node src/migrate.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.1",
+    "@fastify/multipart": "^10.1.8",
+    "@fastify/rate-limit": "^11.2.2",
+    "fastify": "^5.12.8",
+    "jose": "^6.2.17",
+    "nodemailer": "^10.5.0",
+    "pg": "^8.23.1"
+  }
+}

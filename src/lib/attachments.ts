@@ -1,18 +1,14 @@
-import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
-import { supabase, unwrap } from './supabase';
+import { Platform } from 'react-native';
+import { files } from './api';
 
-export const BUCKET = 'receipts';
 export const MAX_BYTES = 15 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 
 export type PickedFile = { uri: string; name: string; mimeType: string; size: number };
-
-const extOf = (mime: string) =>
-  ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'application/pdf': 'pdf' })[mime] ?? 'bin';
 
 export async function pickFromCamera(): Promise<PickedFile | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -38,39 +34,32 @@ export async function pickDocument(): Promise<PickedFile | null> {
 }
 
 /**
- * Sube un comprobante al bucket PRIVADO y lo asocia al movimiento.
- * Si falla el registro en la tabla, elimina el archivo para no dejar huérfanos.
+ * Sube un comprobante al servidor (almacenamiento privado). El servidor valida el tipo real del
+ * archivo, autoriza con las mismas reglas RLS del usuario y registra el comprobante.
  */
 export async function uploadAttachment(opts: { householdId: string; transactionId: string; file: PickedFile; description?: string }) {
   const { householdId, transactionId, file, description } = opts;
   if (!ALLOWED.includes(file.mimeType)) throw new Error('Formato no permitido. Usa JPG, PNG, WEBP, HEIC o PDF.');
-  const body = await new File(file.uri).arrayBuffer();
-  const size = body.byteLength || file.size;
+  const size = file.size || new File(file.uri).size || 0;
   if (size > MAX_BYTES) throw new Error('El archivo supera 15 MB.');
-  const path = `${householdId}/${transactionId}/${Crypto.randomUUID()}.${extOf(file.mimeType)}`;
-  const up = await supabase.storage.from(BUCKET).upload(path, body, { contentType: file.mimeType, upsert: false });
-  if (up.error) throw up.error;
-  const ins = await supabase.from('transaction_attachments').insert({
-    household_id: householdId,
-    transaction_id: transactionId,
-    storage_path: path,
-    file_name: file.name.slice(0, 200),
-    mime_type: file.mimeType,
-    size_bytes: size,
-    description: description?.slice(0, 200) || null,
-  });
-  if (ins.error) {
-    await supabase.storage.from(BUCKET).remove([path]);
-    throw ins.error;
+  const form = new FormData();
+  form.append('householdId', householdId);
+  form.append('transactionId', transactionId);
+  if (description) form.append('description', description.slice(0, 200));
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(file.uri)).blob();
+    form.append('file', new Blob([blob], { type: file.mimeType }), file.name);
+  } else {
+    // React Native: FormData acepta { uri, name, type } y transmite el archivo sin cargarlo en memoria.
+    form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
   }
-  return path;
+  const r = await files.upload(form);
+  return r.storage_path;
 }
 
-/** URL firmada de corta duración (60 s). Nunca se exponen URLs públicas. */
+/** URL firmada de corta duración. Nunca se exponen URLs públicas. */
 export async function signedUrl(path: string, seconds = 60) {
-  const r = await supabase.storage.from(BUCKET).createSignedUrl(path, seconds);
-  if (r.error) throw r.error;
-  return r.data.signedUrl;
+  return files.signedUrl(path, seconds);
 }
 
 /** Descarga al almacenamiento temporal y abre el menú del sistema (guardar / compartir / abrir con). */
@@ -84,8 +73,7 @@ export async function downloadAndShare(path: string, fileName: string, mimeType:
   return file.uri;
 }
 
+/** Eliminación con motivo: queda auditada y el archivo se borra del servidor. */
 export async function deleteAttachment(id: string, reason: string) {
-  const path = unwrap(await supabase.rpc('delete_attachment', { p_id: id, p_reason: reason })) as string;
-  // El registro queda auditado (borrado lógico); el archivo se elimina del almacenamiento.
-  await supabase.storage.from(BUCKET).remove([path]);
+  await files.remove(id, reason);
 }

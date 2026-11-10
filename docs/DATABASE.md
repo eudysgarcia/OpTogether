@@ -1,6 +1,6 @@
 # Base de datos
 
-Migraciones en `supabase/migrations/`. Tablas principales:
+Migraciones en `server/db/migrations/` (las aplica `server/api/src/migrate.mjs`, una transacción por archivo). `0000_platform.sql` crea los roles (`anon`, `authenticated`, `authenticator` para PostgREST, `api_service`), el esquema `auth` (usuarios, refresh tokens, códigos de recuperación) y `auth.uid()`. Tablas principales:
 
 | Tabla | Propósito |
 |---|---|
@@ -15,7 +15,7 @@ Migraciones en `supabase/migrations/`. Tablas principales:
 | `debts` | Deudas compartidas o personales (tasa opcional, cuotas, frecuencia) |
 | `bills`, `bill_cycles` | Servicios y sus ciclos (vencimiento, monto esperado, reprogramación, cancelación) |
 | `transactions` | **Libro mayor** |
-| `transaction_attachments` | Comprobantes (Storage privado `receipts`) |
+| `transaction_attachments` | Comprobantes (archivos en disco privado del servidor) |
 | `reminders`, `notifications`, `push_tokens` | Recordatorios, bandeja de notificaciones y tokens Expo |
 | `audit_logs` | Auditoría de todas las tablas financieras |
 
@@ -62,5 +62,5 @@ Migraciones en `supabase/migrations/`. Tablas principales:
 
 ## Pruebas
 
-`supabase/tests/database/01_ledger_security.test.sql` (pgTAP, 77 aserciones), `02_hardening.test.sql` (11) y
+`server/db/tests/01_ledger_security.test.sql` (pgTAP, 77 aserciones), `02_hardening.test.sql` (11) y
 `tests/integration/api.test.ts` (API real con dos usuarios y un externo).

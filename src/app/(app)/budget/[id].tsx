@@ -13,7 +13,7 @@ import { allocationFigures, sharesSumOk, splitAmount } from '../../../domain/bud
 import { MONTHS_SHORT, capitalize, monthRange, ymLabel } from '../../../lib/dates';
 import { BUDGET_STATUS_UI } from '../../../lib/labels';
 import { formatMoney, formatPct, parseAmount } from '../../../lib/money';
-import { supabase, unwrap } from '../../../lib/supabase';
+import { db, unwrap } from '../../../lib/api';
 import { space } from '../../../theme/tokens';
 import type { Shares } from '../../../types/models';
 
@@ -46,22 +46,22 @@ export default function AllocationDetail() {
 
   const move = useFinanceMutation(
     async (v: { kind: string; from?: string; to?: string; fund?: string; goal?: string }) =>
-      unwrap(await supabase.rpc('move_budget', {
+      unwrap(await db.rpc('move_budget', {
         p_kind: v.kind, p_amount: parseAmount(amount) ?? 0, p_reason: reason,
         p_from_allocation: v.from, p_to_allocation: v.to, p_fund: v.fund, p_goal: v.goal,
       })),
     { success: 'Movimiento de presupuesto registrado', onSuccess: () => closeAction() },
   );
   const adjust = useFinanceMutation(
-    async () => unwrap(await supabase.rpc('adjust_allocation', { p_allocation: id!, p_amount: parseAmount(amount) ?? -1, p_reason: reason })),
+    async () => unwrap(await db.rpc('adjust_allocation', { p_allocation: id!, p_amount: parseAmount(amount) ?? -1, p_reason: reason })),
     { success: 'Presupuesto ajustado', onSuccess: () => closeAction() },
   );
   const voidM = useFinanceMutation(
-    async (v: { id: string; reason: string }) => unwrap(await supabase.rpc('void_budget_move', { p_move: v.id, p_reason: v.reason })),
+    async (v: { id: string; reason: string }) => unwrap(await db.rpc('void_budget_move', { p_move: v.id, p_reason: v.reason })),
     { success: 'Movimiento revertido', onSuccess: () => setVoidMove(null) },
   );
   const saveMeta = useFinanceMutation(
-    async (patch: { shares?: Shares; is_recurring?: boolean }) => unwrap(await supabase.from('budget_allocations').update(patch).eq('id', id!).select('id')),
+    async (patch: { shares?: Shares; is_recurring?: boolean }) => unwrap(await db.from('budget_allocations').update(patch).eq('id', id!).select('id')),
     { success: 'Cambios guardados', onSuccess: () => setEditShares(null) },
   );
 

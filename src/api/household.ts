@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { supabase, unwrap } from '../lib/supabase';
+import { db, unwrap } from '../lib/api';
 import { useAuth } from '../providers/AuthProvider';
 import type { Household, IncomeRecord, Member } from '../types/models';
 
@@ -20,10 +20,10 @@ export function useHousehold() {
     queryKey: ['household', uid],
     enabled: !!uid,
     queryFn: async (): Promise<HouseholdData> => {
-      const members = unwrap(await supabase.from('household_members').select('*').order('created_at')) ?? [];
+      const members = unwrap(await db.from('household_members').select('*').order('created_at')) ?? [];
       const me = members.find((m) => m.user_id === uid) ?? null;
       if (!me) return { household: null, members: [], me: null, partner: null };
-      const household = unwrap(await supabase.from('households').select('*').eq('id', me.household_id).single());
+      const household = unwrap(await db.from('households').select('*').eq('id', me.household_id).single());
       const partner = members.find((m) => m.id !== me.id) ?? null;
       return { household, members, me, partner };
     },
@@ -57,7 +57,7 @@ export function useIncomes() {
     queryKey: ['incomes', hid],
     enabled: !!hid,
     queryFn: async () =>
-      unwrap(await supabase.from('income_records').select('*').eq('household_id', hid).order('effective_from', { ascending: false })) as IncomeRecord[],
+      unwrap(await db.from('income_records').select('*').eq('household_id', hid).order('effective_from', { ascending: false })) as IncomeRecord[],
   });
 }
 
@@ -73,13 +73,13 @@ export function currentIncomes(records: IncomeRecord[] | undefined, today: strin
 export function useCreateHousehold() {
   return useMutation({
     mutationFn: async (setup: Record<string, unknown>) =>
-      unwrap(await supabase.rpc('create_household', { p_setup: setup as never })),
+      unwrap(await db.rpc('create_household', { p_setup: setup as never })),
   });
 }
 
 export function useAcceptInvite() {
   return useMutation({
     mutationFn: async (v: { code: string; name?: string }) =>
-      unwrap(await supabase.rpc('accept_invite', { p_code: v.code, p_display_name: v.name })),
+      unwrap(await db.rpc('accept_invite', { p_code: v.code, p_display_name: v.name })),
   });
 }

@@ -9,7 +9,7 @@ import { installmentSchedule } from '../../domain/debts';
 import { WEEKDAYS_SHORT, addDaysISO, currentYM, formatDate, monthGrid, monthRange, todayISO, weekOf, type Frequency } from '../../lib/dates';
 import { BILL_STATUS_UI } from '../../lib/labels';
 import { formatMoney } from '../../lib/money';
-import { supabase, unwrap } from '../../lib/supabase';
+import { db, unwrap } from '../../lib/api';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
 
@@ -56,7 +56,7 @@ export default function CalendarScreen() {
   }, [events]);
 
   const addReminder = useFinanceMutation(
-    async () => unwrap(await supabase.from('reminders').insert({ household_id: hid, scope: rem.personal ? 'personal' : 'household', title: rem.title.trim(), note: rem.note.trim() || null, remind_on: rem.date })),
+    async () => unwrap(await db.from('reminders').insert({ household_id: hid, scope: rem.personal ? 'personal' : 'household', title: rem.title.trim(), note: rem.note.trim() || null, remind_on: rem.date })),
     { success: 'Recordatorio creado', onSuccess: () => { setAdding(false); setRem({ title: '', date: todayISO(), note: '', personal: false }); } },
   );
 
