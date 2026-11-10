@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { z } from 'zod';
 import { Isotype, Wordmark } from '../../components/brand/Logo';
-import { Banner, Button, Input, Screen, Text } from '../../components/ui';
+import { Banner, Button, Input, Screen, Switch, Text } from '../../components/ui';
+import { getLastEmail, getRemember } from '../../lib/session';
 import { errorMessage } from '../../lib/errors';
 import { auth } from '../../lib/api';
 import { space } from '../../theme/tokens';
@@ -18,12 +19,26 @@ const schema = z.object({
 export default function SignIn() {
   const [error, setError] = useState<string>();
   const [show, setShow] = useState(false);
-  const { control, handleSubmit, formState } = useForm({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
+  const [remember, setRememberState] = useState(true);
+  const { control, handleSubmit, formState, setValue } = useForm({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
+
+  // Precarga el último correo y la preferencia "Recordarme".
+  useEffect(() => {
+    let alive = true;
+    Promise.all([getLastEmail(), getRemember()]).then(([email, rem]) => {
+      if (!alive) return;
+      if (email) setValue('email', email);
+      setRememberState(rem);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [setValue]);
 
   const onSubmit = handleSubmit(async (v) => {
     setError(undefined);
     try {
-      await auth.signIn(v.email, v.password);
+      await auth.signIn(v.email.trim().toLowerCase(), v.password, remember);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -55,6 +70,7 @@ export default function SignIn() {
             right={<Text variant="label" color="brand" onPress={() => setShow((s) => !s)} accessibilityRole="button">{show ? 'Ocultar' : 'Mostrar'}</Text>} />
         )}
       />
+      <Switch testID="switch-remember" label="Recordarme" description="Mantener la sesión iniciada en este teléfono" value={remember} onChange={setRememberState} />
       <Link href="/forgot-password" asChild>
         <Text variant="label" color="brand" accessibilityRole="link" style={{ alignSelf: 'flex-end', paddingVertical: 6 }}>¿Olvidaste tu contraseña?</Text>
       </Link>

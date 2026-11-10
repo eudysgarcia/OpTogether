@@ -77,7 +77,8 @@
     "db:test": "sh server/db/test.sh",
     "test:integration": "jest -c jest.integration.config.js --runInBand",
     "server:up": "cd server && docker compose up -d --build",
-    "server:down": "cd server && docker compose down"
+    "server:down": "cd server && docker compose down",
+    "eas-build-pre-install": "node scripts/write-google-services.mjs"
   },
   "private": true,
   "jest": {

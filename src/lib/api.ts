@@ -1,7 +1,7 @@
 import { PostgrestClient } from '@supabase/postgrest-js';
 import type { Database } from '../types/database';
 import { useBackend } from '../store/backend';
-import { loadSession, saveSession, type Session } from './session';
+import { loadSession, saveSession, setLastEmail, setRemember, type Session } from './session';
 
 /**
  * Cliente del backend propio:
@@ -89,12 +89,17 @@ export const auth = {
     return () => listeners.delete(l);
   },
   async signUp(email: string, password: string) {
+    await setRemember(true);
     const s = await request<Session>('/auth/signup', { method: 'POST', json: { email, password } });
+    await setLastEmail(email);
     await setSession(s, 'SIGNED_IN');
     return s;
   },
-  async signIn(email: string, password: string) {
+  /** remember=true: la sesión queda guardada (cifrada) y no hay que volver a escribir correo y contraseña. */
+  async signIn(email: string, password: string, remember = true) {
+    await setRemember(remember);
     const s = await request<Session>('/auth/token', { method: 'POST', json: { email, password } });
+    await setLastEmail(remember ? email : null);
     await setSession(s, 'SIGNED_IN');
     return s;
   },

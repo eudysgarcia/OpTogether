@@ -147,6 +147,7 @@ export async function authRoutes(app) {
     }
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const { rows } = await pool.query('select id, email from auth.users where lower(email) = $1', [email]);
+    if (!rows[0]) req.log.info({ email }, 'Recuperación solicitada para un correo sin cuenta (no se envía nada)');
     if (rows[0]) {
       const code = sixDigitCode();
       await pool.query(
@@ -156,7 +157,7 @@ export async function authRoutes(app) {
       try {
         await sendRecoveryCode(rows[0].email, code);
       } catch (e) {
-        req.log.error(e, 'No se pudo enviar el correo de recuperación');
+        req.log.error({ err: e.message, code: e.code, response: e.response }, 'SMTP: no se pudo enviar el correo de recuperación');
       }
     }
     return { ok: true };

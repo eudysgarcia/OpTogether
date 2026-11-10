@@ -92,6 +92,11 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - run: npm ci
         if: env.EXPO_TOKEN != ''
+      - name: google-services.json desde el secreto (nunca en el repo)
+        if: env.EXPO_TOKEN != ''
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: node scripts/write-google-services.mjs
       - name: Publicar actualización o compilar APK según la huella nativa
         if: env.EXPO_TOKEN != ''
         uses: expo/expo-github-action/continuous-deploy-fingerprint@main

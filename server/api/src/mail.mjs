@@ -7,7 +7,9 @@ const getTransport = () => {
   transport ??= nodemailer.createTransport({
     host: config.smtp.host,
     port: config.smtp.port,
-    secure: config.smtp.port === 465,
+    secure: config.smtp.port === 465, // 465 = SSL directo; 587 = STARTTLS
+    requireTLS: config.smtp.port === 587,
+    connectionTimeout: 15000,
     auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
   });
   return transport;
