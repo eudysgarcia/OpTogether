@@ -1,0 +1,19 @@
+# Conecta OpTogether a la red Docker de un Caddy/proxy EXISTENTE (p. ej. proxy-caddy-1).
+# Activación: en .env →  COMPOSE_FILE=docker-compose.yml:docker-compose.proxy.yml  y  PROXY_NETWORK=<red del proxy>
+# Alias únicos para no chocar con servicios `api`/`rest` de otros proyectos en la misma red.
+services:
+  rest:
+    networks:
+      default:
+      proxy:
+        aliases: [optogether-rest]
+  api:
+    networks:
+      default:
+      proxy:
+        aliases: [optogether-api]
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?Define PROXY_NETWORK (red Docker del proxy existente)}
