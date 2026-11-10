@@ -21,7 +21,7 @@ sudo mkdir -p /opt/optogether && sudo chown $USER /opt/optogether
 git clone https://github.com/eudysgarcia/OpTogether.git /opt/optogether
 cd /opt/optogether/server
 cp .env.example .env && chmod 600 .env
-nano .env                     # PUBLIC_URL, 4 secretos (openssl rand -base64 48), SIGNUP_ALLOWLIST
+nano .env                     # PUBLIC_URL, 4 secretos (openssl rand -hex 32), SIGNUP_ALLOWLIST
 ss -ltn | grep -E ':(8730|8731) '   # si aparecen, cambia REST_PORT / API_PORT en .env
 docker compose up -d --build
 docker compose logs migrate   # debe terminar en "Migraciones al día."
