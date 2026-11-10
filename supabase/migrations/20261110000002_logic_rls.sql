@@ -610,8 +610,15 @@ begin
   if b.id is null or not b.active then return 0; end if;
   select max(original_due_date) into v_last from public.bill_cycles where bill_id = p_bill;
   if v_last is null then
+    -- Primer ciclo: el próximo vencimiento a partir de hoy (no se marca como vencido
+    -- un pago que pudo haberse hecho antes de registrar el servicio).
     v_next := public.bill_due_on(extract(year from v_today)::int, extract(month from v_today)::int, b.due_day);
-    if b.frequency = 'weekly' then v_next := v_today + ((7 + b.due_day % 7 - extract(dow from v_today)::int) % 7); end if;
+    if b.frequency = 'weekly' then
+      v_next := v_today + ((7 + b.due_day % 7 - extract(dow from v_today)::int) % 7);
+    elsif v_next < v_today then
+      v_next := public.bill_due_on(extract(year from v_today + interval '1 month')::int,
+                                   extract(month from v_today + interval '1 month')::int, b.due_day);
+    end if;
   else
     v_next := public._next_cycle_date(b, v_last);
   end if;

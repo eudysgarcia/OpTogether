@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useDebt, useFinanceMutation } from '../../../api/finance';
 import { useHH } from '../../../api/household';
-import { Banner, Button, DateField, Header, Input, Screen, Select } from '../../../components/ui';
+import { Banner, Button, DateField, Header, Input, Loading, Screen, Select } from '../../../components/ui';
 import { FREQUENCY_LABEL, todayISO, type Frequency } from '../../../lib/dates';
 import { DEBT_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
@@ -11,15 +11,20 @@ import { supabase, unwrap } from '../../../lib/supabase';
 import { space } from '../../../theme/tokens';
 import type { Scope } from '../../../types/models';
 
-export default function DebtForm() {
+type DebtFormState = { name: string; creditor: string; kind: string; original: string; rate: string; start: string; due: string; installment: string; frequency: string; count: string; responsible: string | null; notes: string };
+
+export default function DebtFormScreen() {
   const { id, scope = 'household' } = useLocalSearchParams<{ id?: string; scope?: Scope }>();
-  const { hid, members } = useHH();
   const existing = useDebt(id);
-  const [f, setF] = useState({ name: '', creditor: '', kind: 'loan', original: '', rate: '', start: todayISO(), due: '', installment: '', frequency: 'monthly', count: '', responsible: null as string | null, notes: '' });
-  useEffect(() => {
-    const d = existing.data;
-    if (d) setF({ name: d.name!, creditor: d.creditor ?? '', kind: d.kind!, original: String(d.original_amount), rate: d.interest_rate != null ? String(d.interest_rate) : '', start: d.start_date!, due: d.due_date ?? '', installment: d.installment_amount ? String(d.installment_amount) : '', frequency: d.frequency!, count: d.installments_count ? String(d.installments_count) : '', responsible: d.responsible_member_id, notes: d.notes ?? '' });
-  }, [existing.data]);
+  if (id && !existing.data) return <Screen header={<Header title="Editar deuda" back />}><Loading /></Screen>;
+  const d = existing.data;
+  const initial: DebtFormState | undefined = d ? { name: d.name!, creditor: d.creditor ?? '', kind: d.kind!, original: String(d.original_amount), rate: d.interest_rate != null ? String(d.interest_rate) : '', start: d.start_date!, due: d.due_date ?? '', installment: d.installment_amount ? String(d.installment_amount) : '', frequency: d.frequency!, count: d.installments_count ? String(d.installments_count) : '', responsible: d.responsible_member_id, notes: d.notes ?? '' } : undefined;
+  return <DebtForm key={id ?? 'new'} id={id} scope={scope} initial={initial} />;
+}
+
+function DebtForm({ id, scope, initial }: { id?: string; scope: Scope; initial?: DebtFormState }) {
+  const { hid, members } = useHH();
+  const [f, setF] = useState<DebtFormState>(initial ?? { name: '', creditor: '', kind: 'loan', original: '', rate: '', start: todayISO(), due: '', installment: '', frequency: 'monthly', count: '', responsible: null, notes: '' });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   const original = parseAmount(f.original);
   const valid = f.name.trim() && original && original > 0 && (!f.rate || Number(f.rate) >= 0);

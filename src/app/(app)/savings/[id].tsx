@@ -38,8 +38,10 @@ export default function GoalDetail() {
     const k = t.occurred_on.slice(0, 7);
     byMonth.set(k, (byMonth.get(k) ?? 0) + (t.type === 'savings_deposit' ? Number(t.amount) : -Number(t.amount)));
   }
-  let acc = 0;
-  const evo = [...byMonth.entries()].sort().map(([k, v]) => { acc += v; return { label: MONTHS_SHORT[Number(k.slice(5)) - 1], value: acc }; }).slice(-6);
+  const evo = [...byMonth.entries()].sort().reduce<{ label: string; value: number }[]>((arr, [k, v]) => {
+    arr.push({ label: MONTHS_SHORT[Number(k.slice(5)) - 1], value: (arr[arr.length - 1]?.value ?? 0) + v });
+    return arr;
+  }, []).slice(-6);
 
   return (
     <Screen header={<Header title={g.name} subtitle={g.scope === 'personal' ? 'Privada' : 'Compartida'} back right={<IconButton icon="edit" label="Editar" onPress={() => router.push(`/savings/new?id=${g.id}&scope=${g.scope}`)} />} />} refreshing={txs.isRefetching} onRefresh={() => { hh.refetch(); pe.refetch(); txs.refetch(); }}>

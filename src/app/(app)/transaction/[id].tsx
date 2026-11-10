@@ -6,20 +6,20 @@ import { View } from 'react-native';
 import { useAttachments, useAudit, useCategories, useDebts, useFunds, useGoals, usePaymentMethods, useTransaction, useUpdateTransaction, useVoidTransaction } from '../../../api/finance';
 import { useHH } from '../../../api/household';
 import {
-  Banner, Button, Card, ConfirmSheet, DateField, Divider, EmptyState, ErrorState, Header, Icon, IconButton, IconTile, Input, KeyValue,
+  Banner, Button, Card, ConfirmSheet, DateField, Divider, EmptyState, ErrorState, Header, IconButton, IconTile, Input, KeyValue,
   Loading, Money, Screen, SectionHeader, Sheet, StatusPill, Switch, Text,
 } from '../../../components/ui';
 import { deleteAttachment, downloadAndShare, pickDocument, pickFromCamera, pickFromLibrary, signedUrl, uploadAttachment } from '../../../lib/attachments';
 import { formatDate } from '../../../lib/dates';
 import { errorMessage } from '../../../lib/errors';
 import { TX_TYPE } from '../../../lib/labels';
-import { formatMoney, parseAmount } from '../../../lib/money';
+import { parseAmount } from '../../../lib/money';
 import { invalidateFinance } from '../../../lib/queryClient';
 import { toast } from '../../../store/toast';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { radius, space } from '../../../theme/tokens';
 import { AuditEntry } from '../../../components/finance/AuditEntry';
-import type { Attachment, AuditLog, TxType } from '../../../types/models';
+import type { Attachment, TxType } from '../../../types/models';
 
 
 export default function TransactionDetail() {

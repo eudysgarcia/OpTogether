@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useCategories, useDebts, useFunds, useGoals, useTransactions } from '../../api/finance';
 import { PeriodSelector, TxList } from '../../components/finance';
 import { DonutChart } from '../../components/charts/Charts';
-import { Banner, Button, Card, Divider, EmptyState, Header, Icon, KeyValue, ListRow, ListSkeleton, Money, Screen, SectionHeader, Text } from '../../components/ui';
+import { Banner, Button, Card, Divider, EmptyState, Header, Icon, ListRow, ListSkeleton, Money, Screen, SectionHeader, Text } from '../../components/ui';
 import { groupSpending, netSpending } from '../../domain/reports';
 import { currentYM, monthRange } from '../../lib/dates';
 import { formatMoney, sum } from '../../lib/money';
@@ -58,7 +58,8 @@ export default function Personal() {
         <ListRow icon="chart" title="Mi reporte" subtitle="Exportar mis movimientos (privado)" onPress={() => router.push('/reports?scope=personal')} />
       </Card>
       <Card>
-        <KeyValue label="Balance (cuentas + ahorros − deudas)"><Money value={balance + saved - owed} variant="amountM" color={balance + saved - owed >= 0 ? 'positive' : 'negative'} /></KeyValue>
+        <Text variant="caption" color="textSecondary">Patrimonio neto (cuentas + ahorros − deudas)</Text>
+        <Money value={balance + saved - owed} variant="amountL" color={balance + saved - owed >= 0 ? 'positive' : 'negative'} />
       </Card>
       {(funds.data?.length ?? 0) === 0 && !funds.isPending && <Banner tone="info" title="Crea tu primera cuenta" message="Registra tu cartera o cuenta para llevar tu saldo personal." action="Crear" onPress={() => router.push('/funds/new?scope=personal')} />}
       {byCat.length > 0 && <View><SectionHeader title="Mis gastos por categoría" /><Card><DonutChart data={byCat} centerValue={formatMoney(spent, { compact: true })} centerLabel="gastado" /></Card></View>}

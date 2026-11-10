@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useBill, useCategories, useFinanceMutation } from '../../../api/finance';
 import { useHH } from '../../../api/household';
-import { Button, Chip, ChipRow, Header, Input, Screen, Segmented, Select, Switch, Text } from '../../../components/ui';
+import { Button, Chip, ChipRow, Header, Input, Loading, Screen, Segmented, Select, Switch, Text } from '../../../components/ui';
 import { BILL_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
 import { supabase, unwrap } from '../../../lib/supabase';
@@ -12,19 +12,24 @@ import { space } from '../../../theme/tokens';
 const OFFSETS = [10, 5, 3, 1, 0, -1, -3];
 const offsetLabel = (o: number) => (o > 0 ? `${o} días antes` : o === 0 ? 'El día' : `${-o} día(s) después`);
 
-export default function BillForm() {
+type BillFormState = { name: string; provider: string; kind: string; categoryId: string | null; amount: string; amountType: string; dueDay: string; frequency: string; responsible: string | null; offsets: number[]; active: boolean };
+
+export default function BillFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { hid, members } = useHH();
   const existing = useBill(id);
+  if (id && !existing.data) return <Screen header={<Header title="Editar servicio" back />}><Loading /></Screen>;
+  const b = existing.data;
+  const initial = b ? { name: b.name, provider: b.provider ?? '', kind: b.kind, categoryId: b.category_id, amount: String(b.estimated_amount), amountType: b.amount_type, dueDay: String(b.due_day), frequency: b.frequency, responsible: b.responsible_member_id, offsets: b.reminder_offsets, active: b.active } : undefined;
+  return <BillForm key={id ?? 'new'} id={id} initial={initial} />;
+}
+
+function BillForm({ id, initial }: { id?: string; initial?: BillFormState }) {
+  const { hid, members } = useHH();
   const cats = useCategories();
-  const [f, setF] = useState({
-    name: '', provider: '', kind: 'other', categoryId: null as string | null, amount: '', amountType: 'fixed', dueDay: '1',
-    frequency: 'monthly', responsible: null as string | null, offsets: [10, 5, 1, 0, -1], active: true,
+  const [f, setF] = useState<BillFormState>(initial ?? {
+    name: '', provider: '', kind: 'other', categoryId: null, amount: '', amountType: 'fixed', dueDay: '1',
+    frequency: 'monthly', responsible: null, offsets: [10, 5, 1, 0, -1], active: true,
   });
-  useEffect(() => {
-    const b = existing.data;
-    if (b) setF({ name: b.name, provider: b.provider ?? '', kind: b.kind, categoryId: b.category_id, amount: String(b.estimated_amount), amountType: b.amount_type, dueDay: String(b.due_day), frequency: b.frequency, responsible: b.responsible_member_id, offsets: b.reminder_offsets, active: b.active });
-  }, [existing.data]);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   const day = Number(f.dueDay);
   const valid = f.name.trim() && f.categoryId && parseAmount(f.amount) !== null && Number.isInteger(day) && day >= 1 && day <= 31;

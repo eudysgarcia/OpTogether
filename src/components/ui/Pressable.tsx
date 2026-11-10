@@ -16,11 +16,11 @@ export function Pressable({
       {...rest}
       accessibilityRole={rest.accessibilityRole ?? 'button'}
       onPressIn={(e) => {
-        scale.value = withSpring(scaleTo, { damping: 20, stiffness: 400 });
+        scale.set(withSpring(scaleTo, { damping: 20, stiffness: 400 }));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.value = withSpring(1, { damping: 16, stiffness: 300 });
+        scale.set(withSpring(1, { damping: 16, stiffness: 300 }));
         onPressOut?.(e);
       }}
       onPress={(e) => {

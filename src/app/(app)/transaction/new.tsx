@@ -8,7 +8,7 @@ import {
 import { useHH } from '../../../api/household';
 import { CategoryGrid } from '../../../components/finance';
 import {
-  AmountInput, Banner, Button, Chip, ChipRow, DateField, Icon, IconButton, Input, Screen, Segmented, Select, Switch, Text,
+  AmountInput, Banner, Button, Chip, ChipRow, DateField, Header, Icon, IconButton, Input, Loading, Screen, Segmented, Select, Switch, Text,
 } from '../../../components/ui';
 import { pickDocument, pickFromCamera, pickFromLibrary, uploadAttachment, type PickedFile } from '../../../lib/attachments';
 import { addMonthsYM, capitalize, currentYM, todayISO, ymLabel } from '../../../lib/dates';
@@ -20,7 +20,7 @@ import { useDrafts } from '../../../store/drafts';
 import { toast } from '../../../store/toast';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { radius, space } from '../../../theme/tokens';
-import type { Scope, TxType } from '../../../types/models';
+import type { BillCycleRow, Scope, TxType } from '../../../types/models';
 
 const PRIMARY: { value: TxType; label: string }[] = [
   { value: 'expense', label: 'Gasto' },
@@ -51,9 +51,21 @@ type Form = {
 
 const DRAFT_KEY = 'tx-new';
 
-export default function NewTransaction() {
+type Params = { type?: TxType; scope?: Scope; billCycleId?: string; debtId?: string; goalId?: string; fundId?: string; categoryId?: string };
+
+/** Carga previa (p. ej. el ciclo de un servicio a pagar) y monta el formulario con sus valores iniciales. */
+export default function NewTransactionScreen() {
+  const params = useLocalSearchParams<Params>();
+  const cycles = useBillCycles({});
+  const billCycle = params.billCycleId ? cycles.data?.find((c) => c.id === params.billCycleId) : undefined;
+  if (params.billCycleId && !billCycle) {
+    return <Screen header={<Header title="Registrar pago" back />}>{cycles.isPending ? <Loading /> : <Banner tone="danger" title="No encontramos ese vencimiento" />}</Screen>;
+  }
+  return <NewTransaction key={params.billCycleId ?? 'free'} params={params} billCycle={billCycle} />;
+}
+
+function NewTransaction({ params, billCycle }: { params: Params; billCycle?: BillCycleRow }) {
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ type?: TxType; scope?: Scope; billCycleId?: string; debtId?: string; goalId?: string; fundId?: string; categoryId?: string }>();
   const { hid, me, members, uid } = useHH();
   const draft = useDrafts((s) => s.drafts[DRAFT_KEY]);
   const saveDraft = useDrafts((s) => s.save);
@@ -64,10 +76,14 @@ export default function NewTransaction() {
     const base: Form = {
       type: params.type ?? (params.billCycleId ? 'expense' : 'expense'),
       scope: params.scope ?? 'household',
-      amount: '', categoryId: params.categoryId ?? null, description: '', date: todayISO(), memberId: null,
+      amount: '', categoryId: params.categoryId ?? null, description: '', date: todayISO(), memberId: me?.id ?? null,
       fundId: params.fundId ?? null, toFundId: null, goalId: params.goalId ?? null, debtId: params.debtId ?? null,
       paymentMethodId: null, notes: '', extraordinary: false, chargeKind: 'interest', periodOffset: '0',
     };
+    if (billCycle) {
+      const pending = Math.max(Number(billCycle.expected_amount) - Number(billCycle.paid_amount), 0);
+      return { ...base, type: 'expense', amount: pending ? String(pending) : '', categoryId: billCycle.category_id, description: `Pago ${billCycle.bill_name}` };
+    }
     if (!fromParams && draft && Date.now() - draft.savedAt < 1000 * 60 * 60 * 24) return { ...base, ...(draft.data as Partial<Form>) };
     return base;
   });
@@ -86,19 +102,8 @@ export default function NewTransaction() {
   const goals = useGoals(f.scope);
   const debts = useDebts(f.scope);
   const methods = usePaymentMethods();
-  const cycle = useBillCycles({ scope: undefined });
-  const billCycle = params.billCycleId ? cycle.data?.find((c) => c.id === params.billCycleId) : undefined;
-
-  // Valores por defecto
-  useEffect(() => {
-    if (me && !f.memberId) set('memberId', me.id);
-  }, [me]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (billCycle && !f.amount) {
-      const pending = Math.max(Number(billCycle.expected_amount) - Number(billCycle.paid_amount), 0);
-      setF((p) => ({ ...p, type: 'expense', amount: pending ? String(pending) : '', categoryId: billCycle.category_id, description: `Pago ${billCycle.bill_name}` }));
-    }
-  }, [billCycle]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Quien paga/aporta por defecto: el usuario actual.
+  const memberId = f.memberId ?? me?.id ?? null;
 
   // Borrador automático (no se pierde lo escrito)
   useEffect(() => {
@@ -115,9 +120,10 @@ export default function NewTransaction() {
   const selectedCat = categories.data?.find((c) => c.id === f.categoryId);
 
   // Al elegir una categoría de fondo (p. ej. Caja chica) se sugiere pagar desde ese fondo.
-  useEffect(() => {
-    if (f.type === 'expense' && selectedCat?.linked_fund_id && f.scope === selectedCat.scope && !f.fundId) set('fundId', selectedCat.linked_fund_id);
-  }, [selectedCat?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickCategory = (id: string) => {
+    const c = categories.data?.find((x) => x.id === id);
+    setF((p) => ({ ...p, categoryId: id, fundId: p.fundId ?? (p.type === 'expense' && c?.linked_fund_id && c.scope === p.scope ? c.linked_fund_id : null) }));
+  };
 
   const fundOpts = (funds.data ?? []).map((x) => ({ value: x.id, label: x.name, icon: x.icon, color: x.color, description: `Saldo: ${formatMoney(x.balance)}` }));
   const goalOpts = (goals.data ?? []).filter((g) => g.status === 'active').map((g) => ({ value: g.id, label: g.name, icon: g.icon, description: `Ahorrado: ${formatMoney(g.balance)}` }));
@@ -144,7 +150,7 @@ export default function NewTransaction() {
     if (f.type === 'withdrawal' && !f.fundId) e.fund = 'Elige el fondo';
     if ((f.type === 'savings_deposit' || f.type === 'savings_withdrawal') && !f.goalId) e.goal = 'Elige la meta de ahorro';
     if ((f.type === 'debt_payment' || f.type === 'debt_charge') && !f.debtId) e.debt = 'Elige la deuda';
-    if (f.type === 'contribution' && !f.memberId) e.member = 'Indica quién aporta';
+    if (f.type === 'contribution' && !memberId) e.member = 'Indica quién aporta';
     if (overpay && !overpayConfirm) e.amount = `Supera el saldo pendiente (${formatMoney(selectedDebt!.balance)}). Confirma el sobrepago abajo.`;
     const fund = funds.data?.find((x) => x.id === f.fundId);
     if (fund && amountNum > fund.balance && ['expense', 'transfer', 'withdrawal', 'savings_deposit', 'debt_payment'].includes(f.type)) {
@@ -159,7 +165,12 @@ export default function NewTransaction() {
     const desc =
       f.description.trim() ||
       (f.type === 'expense' || f.type === 'refund' ? selectedCat?.name : undefined) ||
-      (f.type === 'contribution' ? `Aporte de ${members.find((m) => m.id === f.memberId)?.display_name ?? ''}` : meta.label);
+      (f.type === 'contribution' ? `Aporte de ${members.find((m) => m.id === memberId)?.display_name ?? ''}` : undefined) ||
+      (f.type === 'transfer' ? `${funds.data?.find((x) => x.id === f.fundId)?.name} → ${funds.data?.find((x) => x.id === f.toFundId)?.name}` : undefined) ||
+      (f.type === 'deposit' ? `Reposición ${funds.data?.find((x) => x.id === f.toFundId)?.name ?? ''}`.trim() : undefined) ||
+      (f.type === 'savings_deposit' || f.type === 'savings_withdrawal' ? `${meta.label}: ${goals.data?.find((g) => g.id === f.goalId)?.name ?? ''}` : undefined) ||
+      (f.type === 'debt_payment' || f.type === 'debt_charge' ? `${meta.label}: ${selectedDebt?.name ?? ''}` : undefined) ||
+      meta.label;
     let periodId: string | null = null;
     if (f.type === 'contribution' && f.periodOffset === '1') {
       const next = addMonthsYM(currentYM(), 1);
@@ -178,7 +189,7 @@ export default function NewTransaction() {
         description: desc!.slice(0, 120),
         notes: f.notes.trim() || null,
         category_id: ['expense', 'refund', 'income'].includes(f.type) ? f.categoryId : null,
-        member_id: household ? f.memberId : null,
+        member_id: household ? memberId : null,
         fund_id: usesFundOut ? f.fundId : null,
         to_fund_id: usesFundIn ? (f.type === 'transfer' || f.type === 'deposit' ? f.toFundId : f.toFundId) : null,
         savings_goal_id: f.type === 'savings_deposit' || f.type === 'savings_withdrawal' ? f.goalId : null,
@@ -221,7 +232,8 @@ export default function NewTransaction() {
             <Icon name={done.queued ? 'cloud-off' : 'check'} size={44} color={colors.positive} strokeWidth={2.6} />
           </Animated.View>
           <Animated.View entering={FadeIn.delay(150)} style={{ alignItems: 'center', gap: space[2] }}>
-            <Text variant="h1" align="center">{done.queued ? 'Guardado sin conexión' : `${meta.label} registrado`}</Text>
+            <Text variant="h1" align="center">{done.queued ? 'Guardado sin conexión' : '¡Registrado!'}</Text>
+            {!done.queued && <Text variant="bodyStrong" color="textSecondary">{meta.label}</Text>}
             <Text variant="amountL" color="text">{formatMoney(done.amount)}</Text>
             <Text variant="body" color="textSecondary" align="center">
               {done.queued ? 'Se sincronizará automáticamente al recuperar la conexión, sin duplicarse.' : f.type === 'contribution' || f.type === 'transfer' || f.type.startsWith('savings') ? 'No cuenta como gasto: solo mueve dinero entre bolsillos.' : 'Saldos y presupuesto actualizados.'}
@@ -278,7 +290,7 @@ export default function NewTransaction() {
       {(f.type === 'expense' || f.type === 'refund') && !billCycle && (
         <View style={{ gap: space[2] }}>
           <Text variant="label" color="textSecondary">Categoría</Text>
-          <CategoryGrid categories={expenseCats.filter((c) => !c.parent_id)} value={f.categoryId} onChange={(id) => set('categoryId', id)} />
+          <CategoryGrid categories={expenseCats.filter((c) => !c.parent_id)} value={f.categoryId} onChange={pickCategory} />
           {errors.category && <Text variant="caption" color="negative">{errors.category}</Text>}
           {expenseCats.some((c) => c.parent_id && c.parent_id === (selectedCat?.parent_id ?? selectedCat?.id)) && (
             <ChipRow>
@@ -300,7 +312,7 @@ export default function NewTransaction() {
         <View style={{ gap: space[2] }}>
           <Text variant="label" color="textSecondary">{f.type === 'contribution' ? '¿Quién aporta?' : f.type === 'income' ? '¿De quién es el ingreso?' : '¿Quién pagó?'}</Text>
           <ChipRow>
-            {memberOpts.map((m) => <Chip key={m.value} label={m.label} icon="user" selected={f.memberId === m.value} onPress={() => set('memberId', m.value)} />)}
+            {memberOpts.map((m) => <Chip key={m.value} label={m.label} icon="user" selected={memberId === m.value} onPress={() => set('memberId', m.value)} />)}
           </ChipRow>
           {errors.member && <Text variant="caption" color="negative">{errors.member}</Text>}
         </View>

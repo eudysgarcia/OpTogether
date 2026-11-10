@@ -1,22 +1,27 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useFinanceMutation, useFunds } from '../../../api/finance';
 import { useHH } from '../../../api/household';
-import { Banner, Button, Header, Input, Screen, Select } from '../../../components/ui';
+import { Banner, Button, Header, Input, Loading, Screen, Select } from '../../../components/ui';
 import { FUND_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
 import { supabase, unwrap } from '../../../lib/supabase';
 import type { Scope } from '../../../types/models';
 
-export default function FundForm() {
+type FundFormState = { name: string; kind: string; initial: string; responsible: string | null };
+
+export default function FundFormScreen() {
   const { id, scope = 'household' } = useLocalSearchParams<{ id?: string; scope?: Scope }>();
-  const { hid, members } = useHH();
   const funds = useFunds(scope, true);
   const existing = funds.data?.find((f) => f.id === id);
-  const [f, setF] = useState({ name: '', kind: scope === 'personal' ? 'wallet' : 'custom', initial: '0', responsible: null as string | null });
-  useEffect(() => {
-    if (existing) setF({ name: existing.name, kind: existing.kind, initial: String(existing.initial_balance), responsible: existing.responsible_member_id });
-  }, [existing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (id && !existing) return <Screen header={<Header title="Editar fondo" back />}><Loading /></Screen>;
+  const initial = existing ? { name: existing.name, kind: existing.kind, initial: String(existing.initial_balance), responsible: existing.responsible_member_id } : undefined;
+  return <FundForm key={id ?? 'new'} id={id} scope={scope} initialState={initial} />;
+}
+
+function FundForm({ id, scope, initialState }: { id?: string; scope: Scope; initialState?: FundFormState }) {
+  const { hid, members } = useHH();
+  const [f, setF] = useState<FundFormState>(initialState ?? { name: '', kind: scope === 'personal' ? 'wallet' : 'custom', initial: '0', responsible: null });
   const save = useFinanceMutation(
     async () => {
       const row = { name: f.name.trim(), kind: f.kind, icon: FUND_KIND[f.kind].icon, initial_balance: parseAmount(f.initial) ?? 0, responsible_member_id: f.responsible };

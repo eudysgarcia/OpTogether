@@ -1,7 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
-import { onlineManager } from '@tanstack/react-query';
 import { supabase, unwrap } from '../lib/supabase';
 import { invalidateFinance } from '../lib/queryClient';
 import { errorMessage } from '../lib/errors';

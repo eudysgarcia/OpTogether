@@ -96,7 +96,7 @@ export default function Dashboard() {
           </View>
           <View style={{ flexDirection: 'row', marginTop: space[5], gap: space[3] }}>
             <HeroStat label="Gasto real" value={summary.spent} />
-            <HeroStat label="Pagos pendientes" count={pendingCount} />
+            <HeroStat label="Por pagar" count={pendingCount} />
             <HeroStat label="Excedidas" count={summary.exceeded} warn={summary.exceeded > 0} />
           </View>
         </View>
@@ -163,11 +163,11 @@ export default function Dashboard() {
             <SectionHeader title="Fondos disponibles" subtitle="Dinero registrado en caja chica y fondos" action="Ver" onAction={() => router.push('/funds')} />
             {funds.isPending ? <Skeleton height={110} r={radius.lg} /> : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space[3] }}>
-                <View style={{ width: 150, padding: space[4], borderRadius: radius.lg, backgroundColor: colors.fundSoft, justifyContent: 'space-between', gap: space[2] }}>
+                <View style={{ width: 176, padding: space[4], borderRadius: radius.lg, backgroundColor: colors.fundSoft, justifyContent: 'space-between', gap: space[2] }}>
                   <Icon name="coins" color={colors.fund} />
                   <View>
                     <Text variant="caption" color="textSecondary">Total en fondos</Text>
-                    <Money value={fundsTotal} variant="amountM" />
+                    <Money value={fundsTotal} variant="amountM" compact />
                   </View>
                 </View>
                 {(funds.data ?? []).map((f) => <FundCard key={f.id} f={f} />)}

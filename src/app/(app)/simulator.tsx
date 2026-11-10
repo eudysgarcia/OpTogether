@@ -32,6 +32,12 @@ export default function Simulator() {
       budget: allocs.data.map((a) => ({ categoryId: a.category_id, name: a.category_name, amount: Number(a.amount), shares: a.shares as Shares })),
       extraExpenses: 0,
       savingsMonthly: goals.data.filter((g) => g.status === 'active').reduce((s, g) => s + monthlyCommitment(g.commitments), 0),
+      savingsShares: (() => {
+        const per: Record<string, number> = {};
+        for (const g of goals.data.filter((x) => x.status === 'active')) for (const [k, v] of Object.entries((g.commitments as Record<string, number>) ?? {})) per[k] = (per[k] ?? 0) + Number(v);
+        const tot = Object.values(per).reduce((a, b) => a + b, 0);
+        return tot > 0 ? Object.fromEntries(Object.entries(per).map(([k, v]) => [k, (v / tot) * 100])) : {};
+      })(),
       savingsGoal: mainGoal ? { name: mainGoal.name, target: Number(mainGoal.target_amount ?? 0), current: mainGoal.balance } : null,
       debts: debts.data.filter((d) => Number(d.balance) > 0 && Number(d.installment_amount) > 0).map((d) => ({ id: d.id!, name: d.name!, balance: Number(d.balance), annualRate: d.interest_rate, payment: Number(d.installment_amount), frequency: (d.frequency === 'one_time' ? 'monthly' : d.frequency) as Frequency, extra: 0 })),
     };
@@ -82,7 +88,7 @@ export default function Simulator() {
         <SectionHeader title="Proyecciones" />
         <Card>
           <KeyValue label="Ahorro en 12 meses" value={formatMoney(r.savingsIn12Months)} />
-          {current.savingsGoal && <KeyValue label={`Tiempo para "${current.savingsGoal.name}"`} value={r.monthsToSavingsGoal === null ? 'Sin aporte' : r.monthsToSavingsGoal === 0 ? 'Lograda' : `${r.monthsToSavingsGoal} meses (${formatDate(addMonthsISO(todayISO(), r.monthsToSavingsGoal), 'day')} ${addMonthsISO(todayISO(), r.monthsToSavingsGoal).slice(0, 4)})`} />}
+          {current.savingsGoal && current.savingsGoal.target > 0 && <KeyValue label={`Tiempo para "${current.savingsGoal.name}"`} value={r.monthsToSavingsGoal === null ? 'Sin aporte' : r.monthsToSavingsGoal === 0 ? 'Lograda' : `${r.monthsToSavingsGoal} meses (${formatDate(addMonthsISO(todayISO(), r.monthsToSavingsGoal), 'day')} ${addMonthsISO(todayISO(), r.monthsToSavingsGoal).slice(0, 4)})`} />}
           {r.debtPayoff.map((d) => <KeyValue key={d.id} label={`Liquidar ${d.name}`} value={Number.isFinite(d.periods) ? `${d.periods} cuotas` : 'Inviable'} />)}
         </Card>
       </View>

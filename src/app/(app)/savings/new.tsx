@@ -1,23 +1,28 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useFinanceMutation, useGoals } from '../../../api/finance';
 import { useHH } from '../../../api/household';
-import { Button, DateField, Header, Input, Screen, Select, Switch } from '../../../components/ui';
+import { Button, DateField, Header, Input, Loading, Screen, Select, Switch } from '../../../components/ui';
 import { addMonthsISO, todayISO } from '../../../lib/dates';
 import { GOAL_KIND } from '../../../lib/labels';
 import { parseAmount } from '../../../lib/money';
 import { supabase, unwrap } from '../../../lib/supabase';
 import type { Scope } from '../../../types/models';
 
-export default function GoalForm() {
+type GoalFormState = { name: string; kind: string; target: string; hasDate: boolean; date: string; commitments: Record<string, string> };
+
+export default function GoalFormScreen() {
   const { id, scope = 'household' } = useLocalSearchParams<{ id?: string; scope?: Scope }>();
-  const { hid, members, me } = useHH();
   const goals = useGoals(scope, true);
   const existing = goals.data?.find((g) => g.id === id);
-  const [f, setF] = useState({ name: '', kind: 'house', target: '', hasDate: false, date: addMonthsISO(todayISO(), 12), commitments: {} as Record<string, string> });
-  useEffect(() => {
-    if (existing) setF({ name: existing.name, kind: existing.kind, target: existing.target_amount ? String(existing.target_amount) : '', hasDate: !!existing.target_date, date: existing.target_date ?? addMonthsISO(todayISO(), 12), commitments: Object.fromEntries(Object.entries((existing.commitments as Record<string, number>) ?? {}).map(([k, v]) => [k, String(v)])) });
-  }, [existing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (id && !existing) return <Screen header={<Header title="Editar meta" back />}><Loading /></Screen>;
+  const initial = existing ? { name: existing.name, kind: existing.kind, target: existing.target_amount ? String(existing.target_amount) : '', hasDate: !!existing.target_date, date: existing.target_date ?? addMonthsISO(todayISO(), 12), commitments: Object.fromEntries(Object.entries((existing.commitments as Record<string, number>) ?? {}).map(([k, v]) => [k, String(v)])) } : undefined;
+  return <GoalForm key={id ?? 'new'} id={id} scope={scope} initial={initial} />;
+}
+
+function GoalForm({ id, scope, initial }: { id?: string; scope: Scope; initial?: GoalFormState }) {
+  const { hid, members, me } = useHH();
+  const [f, setF] = useState<GoalFormState>(initial ?? { name: '', kind: 'house', target: '', hasDate: false, date: addMonthsISO(todayISO(), 12), commitments: {} });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   const save = useFinanceMutation(
     async () => {

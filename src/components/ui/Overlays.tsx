@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,14 +79,14 @@ export function ConfirmSheet({
   onConfirm: (reason: string) => void;
   reasonPlaceholder?: string;
 }) {
+  return <ConfirmBody key={visible ? 'open' : 'closed'} {...{ visible, onClose, title, message, confirmLabel, danger, requireReason, loading, onConfirm, reasonPlaceholder }} />;
+}
+
+function ConfirmBody({
+  visible, onClose, title, message, confirmLabel = 'Confirmar', danger, requireReason, loading, onConfirm, reasonPlaceholder,
+}: Parameters<typeof ConfirmSheet>[0]) {
   const [reason, setReason] = useState('');
   const [err, setErr] = useState<string>();
-  useEffect(() => {
-    if (visible) {
-      setReason('');
-      setErr(undefined);
-    }
-  }, [visible]);
   return (
     <Sheet
       visible={visible}

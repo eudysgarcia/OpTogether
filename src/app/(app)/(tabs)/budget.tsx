@@ -22,7 +22,7 @@ export default function Budget() {
   const q = useAllocations(ym);
   const period = usePeriod(ym);
   const cats = useCategories();
-  const rows = q.data ?? [];
+  const rows = useMemo(() => q.data ?? [], [q.data]);
   const s = useMemo(() => summarizeBudget(rows), [rows]);
   const extra = rows.reduce((a, r) => a + Number(r.extraordinary_spent ?? 0), 0);
   const unbudgeted = (cats.data ?? []).filter((c) => c.scope === 'household' && !c.parent_id && c.kind !== 'income' && !rows.some((r) => r.category_id === c.id));
@@ -48,14 +48,14 @@ export default function Budget() {
       <View style={{ alignItems: 'center' }}><PeriodSelector value={ym} onChange={setYm} /></View>
       <Card>
         <View style={{ gap: space[3] }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View>
+          <View style={{ flexDirection: 'row', gap: space[3] }}>
+            <View style={{ flex: 1 }}>
               <Text variant="caption" color="textSecondary">Gasto real</Text>
-              <Money value={s.spent} variant="amountL" />
+              <Money value={s.spent} variant="amountM" compact />
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
               <Text variant="caption" color="textSecondary">{s.available >= 0 ? 'Disponible' : 'Exceso neto'}</Text>
-              <Money value={Math.abs(s.available)} variant="amountL" color={s.available >= 0 ? 'available' : 'excess'} />
+              <Money value={Math.abs(s.available)} variant="amountM" compact color={s.available >= 0 ? 'available' : 'excess'} align="right" />
             </View>
           </View>
           <ProgressBar ratio={s.ratio} height={10} accessibilityLabel="Consumo del presupuesto" />

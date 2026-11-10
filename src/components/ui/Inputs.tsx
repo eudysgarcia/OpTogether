@@ -93,7 +93,7 @@ export function AmountInput({
           autoFocus={autoFocus}
           accessibilityLabel={label}
           maxLength={14}
-          style={{ fontFamily: fonts.display, fontSize: 44, letterSpacing: -1, color, minWidth: 120, textAlign: 'center', paddingVertical: 4 }}
+          style={{ fontFamily: fonts.display, fontSize: 44, letterSpacing: -1, color, minWidth: 90, width: Math.max(90, (value.length || 4) * 27 + 16), maxWidth: 280, textAlign: 'center', paddingVertical: 4 }}
         />
       </View>
       {error && <Text variant="caption" color="negative">{error}</Text>}

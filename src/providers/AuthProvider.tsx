@@ -15,14 +15,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [recovering, setRecovering] = useState(false);
+  const noBackend = hydrated && (!url || !anonKey);
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (!url || !anonKey) {
-      setSession(null);
-      setLoading(false);
-      return;
-    }
+    if (!hydrated || !url || !anonKey) return;
     const sb = getSupabase();
     let mounted = true;
     sb.auth.getSession().then(({ data }) => {
@@ -42,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [url, anonKey, hydrated]);
 
   return (
-    <AuthContext.Provider value={{ session, loading: loading || !hydrated, recovering, setRecovering }}>
+    <AuthContext.Provider value={{ session: noBackend ? null : session, loading: !hydrated || (!noBackend && loading), recovering, setRecovering }}>
       {children}
     </AuthContext.Provider>
   );

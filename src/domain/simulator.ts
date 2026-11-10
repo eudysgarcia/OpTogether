@@ -11,6 +11,8 @@ export type Scenario = {
   budget: { categoryId: string; name: string; amount: number; shares: Shares }[];
   extraExpenses: number; // gastos adicionales mensuales
   savingsMonthly: number;
+  /** Reparto del ahorro por miembro (%), p. ej. según compromisos. Vacío = proporcional al ingreso. */
+  savingsShares?: Shares;
   savingsGoal: { name: string; target: number; current: number } | null;
   debts: (DebtInput & { extra: number })[];
 };
@@ -40,8 +42,10 @@ export function runScenario(s: Scenario): ScenarioResult {
     const parts = splitAmount(b.amount, b.shares, ids);
     for (const id of ids) contrib[id] += toCents(parts[id] ?? 0);
   }
-  // Ahorro, gastos extra y cuotas compartidas: proporcional al ingreso.
-  const sharedC = savingsC + extraC + debtPaymentsC;
+  // Ahorro: según compromisos de cada uno (si existen). Gastos extra y cuotas: proporcional al ingreso.
+  const savingsParts = s.savingsShares && Object.keys(s.savingsShares).length ? splitAmount(s.savingsMonthly, s.savingsShares, ids) : null;
+  if (savingsParts) for (const id of ids) contrib[id] += toCents(savingsParts[id] ?? 0);
+  const sharedC = (savingsParts ? 0 : savingsC) + extraC + debtPaymentsC;
   const perMember = s.incomes.map((i) => {
     const incomeShare = totalIncomeC > 0 ? toCents(i.amount) / totalIncomeC : 1 / Math.max(ids.length, 1);
     const c = contrib[i.memberId] + Math.round(sharedC * incomeShare);

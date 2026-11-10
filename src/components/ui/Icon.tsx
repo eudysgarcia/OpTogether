@@ -52,8 +52,8 @@ export function Icon({
       size={size}
       color={color ?? colors.text}
       strokeWidth={strokeWidth}
-      accessibilityLabel={accessibilityLabel}
-      accessible={!!accessibilityLabel}
+      style={{ flexShrink: 0 }}
+      {...(accessibilityLabel ? { accessibilityLabel, accessible: true } : {})}
     />
   );
 }

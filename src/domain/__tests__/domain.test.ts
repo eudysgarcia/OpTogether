@@ -219,3 +219,16 @@ describe('fechas', () => {
     expect(g[0][0]).toBeNull();
   });
 });
+
+describe('simulador con compromisos de ahorro', () => {
+  it('reparte el ahorro según los compromisos (1,000 / 1,000)', () => {
+    const r = runScenario({
+      id: 'x', name: 'x',
+      incomes: [{ memberId: 'mei', name: 'Mei', amount: 16180 }, { memberId: 'eudys', name: 'Eudys', amount: 42550 }],
+      budget: [{ categoryId: 'a', name: 'A', amount: 30500, shares: { mei: 25, eudys: 75 } }, { categoryId: 'b', name: 'B', amount: 7000, shares: { mei: 50, eudys: 50 } }],
+      extraExpenses: 0, savingsMonthly: 2000, savingsShares: { mei: 50, eudys: 50 }, savingsGoal: null, debts: [],
+    });
+    expect(r.perMember.find((m) => m.memberId === 'eudys')!.contribution).toBe(27375);
+    expect(r.perMember.find((m) => m.memberId === 'mei')!.contribution).toBe(12125);
+  });
+});

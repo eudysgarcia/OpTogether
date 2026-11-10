@@ -22,6 +22,7 @@ export async function ensureChannel() {
     await Notifications.setNotificationChannelAsync('reminders', {
       name: 'Recordatorios de pagos',
       description: 'Vencimientos de servicios, cuotas y alertas de presupuesto',
+      // eslint-disable-next-line import/namespace -- enum re-exportado (falso positivo)
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 120, 200],
       lightColor: '#FFCB2F',

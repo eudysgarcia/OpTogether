@@ -60,21 +60,23 @@ function RootNavigator() {
   }, [resolving]);
 
   if (resolving) return null;
+  // Destino según el estado: cualquier ruta protegida no accesible redirige aquí.
+  const home = !configured ? '/connect' : !session ? '/sign-in' : !hasHousehold ? '/onboarding' : '/';
 
   return (
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
-        <Stack.Protected guard={!configured}>
+        <Stack.Protected guard={!configured} redirectTo={home}>
           <Stack.Screen name="connect" />
         </Stack.Protected>
-        <Stack.Protected guard={configured && !session}>
+        <Stack.Protected guard={configured && !session} redirectTo={home}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
-        <Stack.Protected guard={configured && !!session && !hasHousehold}>
+        <Stack.Protected guard={configured && !!session && !hasHousehold} redirectTo={home}>
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
-        <Stack.Protected guard={configured && !!session && hasHousehold}>
+        <Stack.Protected guard={configured && !!session && hasHousehold} redirectTo={home}>
           <Stack.Screen name="(app)" />
         </Stack.Protected>
         <Stack.Screen name="reset-password" />

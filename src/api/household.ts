@@ -1,14 +1,15 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { supabase, unwrap } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 import type { Household, IncomeRecord, Member } from '../types/models';
 
+/** Solo datos serializables: la caché se persiste en disco (las funciones no sobreviven). */
 export type HouseholdData = {
   household: Household | null;
   members: Member[];
   me: Member | null;
   partner: Member | null;
-  memberName: (id: string | null | undefined) => string;
 };
 
 /** Hogar del usuario actual. null => debe hacer onboarding. */
@@ -21,11 +22,10 @@ export function useHousehold() {
     queryFn: async (): Promise<HouseholdData> => {
       const members = unwrap(await supabase.from('household_members').select('*').order('created_at')) ?? [];
       const me = members.find((m) => m.user_id === uid) ?? null;
-      if (!me) return { household: null, members: [], me: null, partner: null, memberName: () => '' };
+      if (!me) return { household: null, members: [], me: null, partner: null };
       const household = unwrap(await supabase.from('households').select('*').eq('id', me.household_id).single());
       const partner = members.find((m) => m.id !== me.id) ?? null;
-      const names = new Map(members.map((m) => [m.id, m.display_name]));
-      return { household, members, me, partner, memberName: (id) => (id ? names.get(id) ?? '—' : 'Hogar') };
+      return { household, members, me, partner };
     },
   });
 }
@@ -34,6 +34,10 @@ export function useHousehold() {
 export function useHH() {
   const q = useHousehold();
   const d = q.data;
+  const memberName = useMemo(() => {
+    const names = new Map((d?.members ?? []).map((m) => [m.id, m.display_name]));
+    return (id: string | null | undefined) => (id ? names.get(id) ?? '—' : 'Hogar');
+  }, [d?.members]);
   return {
     ...q,
     hid: d?.household?.id ?? '',
@@ -41,7 +45,7 @@ export function useHH() {
     members: d?.members ?? [],
     me: d?.me ?? null,
     partner: d?.partner ?? null,
-    memberName: d?.memberName ?? (() => ''),
+    memberName,
     isAdmin: d?.me?.role === 'admin',
     uid: d?.me?.user_id ?? '',
   };

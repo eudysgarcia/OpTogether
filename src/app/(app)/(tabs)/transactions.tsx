@@ -7,7 +7,6 @@ import { PeriodSelector, TxList } from '../../../components/finance';
 import { Card, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, Input, KeyValue, ListSkeleton, Money, Screen, Sheet, Switch, Select, Button } from '../../../components/ui';
 import { netSpending, totalsByType } from '../../../domain/reports';
 import { currentYM, monthRange } from '../../../lib/dates';
-import { TX_TYPE } from '../../../lib/labels';
 import { space } from '../../../theme/tokens';
 import type { TxType } from '../../../types/models';
 

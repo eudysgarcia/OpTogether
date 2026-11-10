@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { useCreateHousehold } from '../../api/household';
 import { Banner, Button, Card, Divider, Header, IconTile, Input, KeyValue, Money, ProgressBar, Screen, Segmented, Text } from '../../components/ui';
-import { INITIAL_CATEGORIES, INITIAL_FUNDS, INITIAL_MEMBERS, INITIAL_PAYMENT_METHODS, INITIAL_SAVINGS, type SetupCategory } from '../../config/initialSetup';
+import { INITIAL_CATEGORIES, INITIAL_FUNDS, INITIAL_MEMBERS, INITIAL_PAYMENT_METHODS, INITIAL_SAVINGS } from '../../config/initialSetup';
 import { errorMessage } from '../../lib/errors';
 import { formatMoney, parseAmount, sum } from '../../lib/money';
 import { queryClient } from '../../lib/queryClient';
@@ -29,7 +29,6 @@ export default function CreateHousehold() {
 
   // Índice 1 de INITIAL_MEMBERS = "pareja A" (Mei); los % de categoría se refieren a ella.
   const meIdx = Number(who);
-  const partnerIdx = 1 - meIdx;
   const incomes = members.map((m) => parseAmount(m.incomeText) ?? 0);
   const totalIncome = sum(incomes);
   const totalBudget = sum(cats.map((c) => parseAmount(c.amountText) ?? 0));

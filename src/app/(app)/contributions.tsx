@@ -55,12 +55,12 @@ export default function Contributions() {
             <View style={{ gap: space[3] }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
                 <Avatar name={r.name} color={m?.color} size={42} />
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, gap: 4 }}>
                   <Text variant="h3">{r.name}</Text>
-                  {income ? <Text variant="caption" color="textSecondary">Ingreso {formatMoney(income)} · aporta {formatPct(r.expected / income)}</Text> : null}
+                  <StatusPill small label={lab.text} tone={lab.tone === 'positive' ? 'positive' : lab.tone === 'warning' ? 'warning' : 'neutral'} icon={lab.tone === 'neutral' ? 'check' : lab.tone === 'positive' ? 'trending-up' : 'clock'} />
                 </View>
-                <StatusPill small label={lab.text} tone={lab.tone === 'positive' ? 'positive' : lab.tone === 'warning' ? 'warning' : 'neutral'} icon={lab.tone === 'neutral' ? 'check' : lab.tone === 'positive' ? 'trending-up' : 'clock'} />
               </View>
+              {income ? <Text variant="caption" color="textSecondary">Ingreso {formatMoney(income)} · lo esperado es {formatPct(r.expected / income)} de su ingreso</Text> : null}
               <ProgressBar ratio={r.expected ? r.actual / r.expected : 0} color={colors.contribution} showExcess={false} />
               <KeyValue label="Esperado"><Money value={r.expected} variant="amountS" /></KeyValue>
               <Text variant="caption" color="textTertiary">Presupuesto {formatMoney(r.expectedBudget)} + ahorro {formatMoney(r.expectedSavings)}</Text>

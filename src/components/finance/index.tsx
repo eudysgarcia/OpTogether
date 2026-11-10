@@ -8,7 +8,7 @@ import { formatMoney, formatPct } from '../../lib/money';
 import { usePrefs } from '../../store/prefs';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/tokens';
-import type { AllocationRow, BillCycleRow, Category, DebtRow, Transaction, TxType } from '../../types/models';
+import type { AllocationRow, BillCycleRow as CycleRow, Category, DebtRow, Transaction, TxType } from '../../types/models';
 import type { FundWithBalance, GoalWithBalance } from '../../api/finance';
 import { Card, IconButton, IconTile, Money, Pressable, ProgressBar, Ring, StatusPill, Text, Icon } from '../ui';
 
@@ -117,7 +117,7 @@ export function BudgetRow({ a, onPress }: { a: AllocationRow; onPress?: () => vo
 const fmt = (n: number) => formatMoney(Math.round(n), { compact: true, hidden: usePrefs.getState().hideAmounts });
 
 // ------------------------------------------------------------------ Pagos
-export function BillCycleRow({ c, onPress }: { c: BillCycleRow; onPress?: () => void }) {
+export function BillCycleRow({ c, onPress }: { c: CycleRow; onPress?: () => void }) {
   const ui = BILL_STATUS_UI[c.status ?? 'pending'];
   const kind = BILL_KIND[c.bill_kind ?? 'other'];
   const pending = Math.max(Number(c.expected_amount) - Number(c.paid_amount), 0);
@@ -163,7 +163,7 @@ export function GoalCard({ g, onPress, compact }: { g: GoalWithBalance; onPress?
   const { colors } = useTheme();
   const ratio = g.target_amount ? g.balance / Number(g.target_amount) : 0;
   return (
-    <Card onPress={onPress ?? (() => router.push(`/savings/${g.id}`))} testID={`goal-${g.name}`} style={compact ? { width: 220 } : undefined}>
+    <Card onPress={onPress ?? (() => router.push(`/savings/${g.id}`))} testID={`goal-${g.name}`} style={compact ? { width: 250 } : undefined}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
         <Ring ratio={ratio} size={58} stroke={6} color={colors.savings}>
           <Icon name={g.icon} size={20} color={colors.savings} />
@@ -264,7 +264,7 @@ export function CategoryGrid({ categories, value, onChange }: { categories: Cate
             accessibilityRole="radio"
             accessibilityState={{ selected: sel }}
             accessibilityLabel={c.name}
-            style={{ width: '23%', minWidth: 72, flexGrow: 1, alignItems: 'center', gap: 6, paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1.5, borderColor: sel ? colors.brand : colors.border, backgroundColor: sel ? colors.brandSoft : colors.surface }}
+            style={{ width: '31%', minWidth: 96, flexGrow: 1, alignItems: 'center', gap: 6, paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1.5, borderColor: sel ? colors.brand : colors.border, backgroundColor: sel ? colors.brandSoft : colors.surface }}
           >
             <IconTile icon={c.icon} color={c.color} size={34} />
             <Text variant="caption" numberOfLines={1} style={{ fontSize: 12, paddingHorizontal: 4 }} color={sel ? 'brand' : 'text'}>{c.name}</Text>
