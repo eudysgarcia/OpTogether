@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# OpTogether · bloque para tu Caddyfile EXISTENTE
+# Cambia el dominio. Caddy obtiene el certificado HTTPS automáticamente.
+#
+# A) Caddy instalado en el servidor (systemd/apt): usa tal cual (127.0.0.1).
+# B) Caddy dentro de Docker: cambia 127.0.0.1:8730 → optogether-rest-1:3000
+#    y 127.0.0.1:8731 → optogether-api-1:8080, y conecta las redes (ver docs/DEPLOY.md).
+# ---------------------------------------------------------------------------
+finanzas.tu-dominio.com {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+	request_body {
+		max_size 20MB
+	}
+	handle_path /rest/* {
+		reverse_proxy 127.0.0.1:8730
+	}
+	handle /auth/* {
+		reverse_proxy 127.0.0.1:8731
+	}
+	handle /files/* {
+		reverse_proxy 127.0.0.1:8731
+	}
+	handle /health {
+		reverse_proxy 127.0.0.1:8731
+	}
+	handle {
+		respond "OpTogether API" 200
+	}
+}

@@ -1,5 +1,8 @@
 # OpTogether · backend autoalojado
-# Uso:  cp .env.example .env  (edita los valores)  &&  docker compose up -d --build
+# Uso con un Caddy (u otro proxy) YA existente en el servidor:
+#   cp .env.example .env  (edita los valores)  &&  docker compose up -d --build
+#   → PostgREST en 127.0.0.1:${REST_PORT} y API en 127.0.0.1:${API_PORT}; agrega caddy/optogether.caddy a tu Caddyfile.
+# Servidor sin proxy propio: docker compose --profile caddy up -d --build  (incluye Caddy con HTTPS)
 name: optogether
 
 services:
@@ -51,6 +54,8 @@ services:
       PGRST_DB_MAX_ROWS: "10000"
       PGRST_DB_CHANNEL_ENABLED: "true"
       PGRST_OPENAPI_MODE: disabled
+    ports:
+      - "127.0.0.1:${REST_PORT:-8730}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -70,20 +75,24 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8731}:8080"
     volumes:
       - receipts:/data/receipts
     depends_on:
       migrate:
         condition: service_completed_successfully
 
+  # Solo si el servidor NO tiene ya un proxy en 80/443:  --profile caddy
   caddy:
     image: caddy:2
+    profiles: ["caddy"]
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
     environment:
-      DOMAIN: ${DOMAIN:?Define DOMAIN}
+      DOMAIN: ${DOMAIN:-localhost}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
