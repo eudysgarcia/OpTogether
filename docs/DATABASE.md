@@ -51,7 +51,16 @@ Migraciones en `supabase/migrations/`. Tablas principales:
 `adjust_allocation`, `move_budget`, `void_budget_move`, `void_transaction`, `ensure_bill_cycles`,
 `create_next_bill_cycle`, `register_push_token`, `delete_attachment`, `generate_notifications` (solo cron).
 
+## Endurecimiento (migración 4)
+
+- Las funciones internas `SECURITY DEFINER` (saldos por id, notificaciones, creación de periodos, triggers)
+  no son invocables desde la API: solo las RPC públicas listadas arriba.
+- Nadie puede auto-promoverse a administrador ni reasignar la cuenta de otro miembro; el hogar siempre
+  conserva al menos un administrador.
+- El monto de un presupuesto solo cambia con `adjust_allocation` (motivo obligatorio).
+- Un comprobante solo puede registrarse con una ruta `{hogar}/{movimiento}/…` del propio movimiento.
+
 ## Pruebas
 
-`supabase/tests/database/01_ledger_security.test.sql` (pgTAP, 76 aserciones) y
+`supabase/tests/database/01_ledger_security.test.sql` (pgTAP, 76 aserciones), `02_hardening.test.sql` (11) y
 `tests/integration/api.test.ts` (API real con dos usuarios y un externo).

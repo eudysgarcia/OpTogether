@@ -82,14 +82,14 @@ select is((select amount from public.budget_allocations where id = pg_temp.v('al
 -- ---------------------------------------------------------------- B. Aportación no es gasto
 insert into public.transactions (household_id, type, amount, description, member_id, to_fund_id)
 values (pg_temp.v('hid'), 'contribution', 6000, 'Aporte quincena', pg_temp.v('mei_member'), pg_temp.v('fund_common'));
-select is(public.fund_balance(pg_temp.v('fund_common')), 6000.00, 'La aportación entra al fondo común');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_common')), 6000.00, 'La aportación entra al fondo común');
 select is((select sum(spent) from public.v_allocations where household_id = pg_temp.v('hid')), 5000.00, 'La aportación no cuenta como gasto');
 
 -- ---------------------------------------------------------------- C. Transferencia no es gasto
 insert into public.transactions (household_id, type, amount, description, fund_id, to_fund_id)
 values (pg_temp.v('hid'), 'transfer', 1000, 'Reponer caja chica', pg_temp.v('fund_common'), pg_temp.v('fund_petty'));
-select is(public.fund_balance(pg_temp.v('fund_common')), 5000.00, 'Transferencia descuenta del origen');
-select is(public.fund_balance(pg_temp.v('fund_petty')), 1000.00, 'Transferencia suma al destino');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_common')), 5000.00, 'Transferencia descuenta del origen');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_petty')), 1000.00, 'Transferencia suma al destino');
 select is((select sum(spent) from public.v_allocations where household_id = pg_temp.v('hid')), 5000.00, 'La transferencia no genera gasto');
 
 -- ---------------------------------------------------------------- G. Fondos consistentes
@@ -100,7 +100,7 @@ insert into public.transactions (household_id, type, amount, description, catego
 values (pg_temp.v('hid'), 'expense', 350, 'Pasaje', pg_temp.v('cat_petty'), pg_temp.v('fund_petty'));
 insert into public.transactions (household_id, type, amount, description, category_id, fund_id)
 values (pg_temp.v('hid'), 'expense', 150, 'Pan', pg_temp.v('cat_petty'), pg_temp.v('fund_petty'));
-select is(public.fund_balance(pg_temp.v('fund_petty')), 500.00, 'Múltiples gastos pequeños desde caja chica');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_petty')), 500.00, 'Múltiples gastos pequeños desde caja chica');
 select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_petty')), 500.00, 'Vista de saldos coincide');
 select throws_like($$ insert into public.transactions (household_id, type, amount, description, fund_id, to_fund_id)
                       values (pg_temp.v('hid'), 'transfer', 10, 'x', pg_temp.v('fund_petty'), pg_temp.v('fund_petty')) $$,
@@ -109,8 +109,8 @@ select throws_like($$ insert into public.transactions (household_id, type, amoun
 -- ---------------------------------------------------------------- Ahorros
 insert into public.transactions (household_id, type, amount, description, savings_goal_id, fund_id, member_id)
 values (pg_temp.v('hid'), 'savings_deposit', 2000, 'Ahorro del mes', pg_temp.v('goal'), pg_temp.v('fund_common'), pg_temp.v('mei_member'));
-select is(public.goal_balance(pg_temp.v('goal')), 2000.00, 'Aporte a ahorro');
-select is(public.fund_balance(pg_temp.v('fund_common')), 3000.00, 'Aporte a ahorro desde fondo descuenta del fondo');
+select is((select balance from public.v_goal_balances where goal_id = pg_temp.v('goal')), 2000.00, 'Aporte a ahorro');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('fund_common')), 3000.00, 'Aporte a ahorro desde fondo descuenta del fondo');
 select is((select sum(spent) from public.v_allocations where household_id = pg_temp.v('hid')), 5500.00, 'El ahorro no es gasto (solo cuentan los gastos reales: 5000 + 500)');
 select throws_like($$ insert into public.transactions (household_id, type, amount, description, savings_goal_id)
                       values (pg_temp.v('hid'), 'savings_withdrawal', 2500, 'Retiro', pg_temp.v('goal')) $$,
@@ -122,16 +122,16 @@ values (pg_temp.v('hid'), 'Préstamo nevera', 'Tienda', 'financing', 10000, publ
 select pg_temp.put('debt', (select id from public.debts limit 1));
 insert into public.transactions (household_id, type, amount, description, debt_id)
 values (pg_temp.v('hid'), 'debt_payment', 2000, 'Abono', pg_temp.v('debt'));
-select is(public.debt_balance(pg_temp.v('debt')), 8000.00, 'Un abono de 2,000 reduce el saldo en 2,000');
+select is((select balance from public.v_debt_balances where debt_id = pg_temp.v('debt')), 8000.00, 'Un abono de 2,000 reduce el saldo en 2,000');
 insert into public.transactions (household_id, type, amount, description, debt_id, debt_charge_kind)
 values (pg_temp.v('hid'), 'debt_charge', 150, 'Recargo por mora', pg_temp.v('debt'), 'fee');
-select is(public.debt_balance(pg_temp.v('debt')), 8150.00, 'Los recargos aumentan el saldo');
+select is((select balance from public.v_debt_balances where debt_id = pg_temp.v('debt')), 8150.00, 'Los recargos aumentan el saldo');
 select throws_like($$ insert into public.transactions (household_id, type, amount, description, debt_id)
                       values (pg_temp.v('hid'), 'debt_payment', 9000, 'Abono grande', pg_temp.v('debt')) $$,
                    '%SOBREPAGO_DEUDA%', 'Un abono no lleva el saldo bajo cero sin confirmación');
 insert into public.transactions (household_id, type, amount, description, debt_id, allow_overpayment)
 values (pg_temp.v('hid'), 'debt_payment', 8150, 'Liquidación', pg_temp.v('debt'), false);
-select is(public.debt_balance(pg_temp.v('debt')), 0.00, 'Pago completo liquida la deuda');
+select is((select balance from public.v_debt_balances where debt_id = pg_temp.v('debt')), 0.00, 'Pago completo liquida la deuda');
 select is((select next_due_date from public.v_debts where id = pg_temp.v('debt')), null::date, 'Deuda saldada no tiene próximo vencimiento');
 select is((select sum(spent) from public.v_allocations where household_id = pg_temp.v('hid')), 5500.00, 'Los abonos no se duplican como gasto de categoría');
 
@@ -169,7 +169,7 @@ select throws_like($$ select public.move_budget('to_savings', 999999, 'Mover tod
 select lives_ok($$ select public.move_budget('to_savings', 1000, 'Sobrante del súper', pg_temp.v('alloc_super'), null, null, pg_temp.v('goal')) $$,
                 'Transferir sobrante a ahorro');
 select is((select effective_amount from public.v_allocations where id = pg_temp.v('alloc_super')), 11000.00, 'El sobrante movido reduce el disponible de la categoría');
-select is(public.goal_balance(pg_temp.v('goal')), 3000.00, 'El sobrante llega a la meta de ahorro');
+select is((select balance from public.v_goal_balances where goal_id = pg_temp.v('goal')), 3000.00, 'El sobrante llega a la meta de ahorro');
 select is((select sum(spent) from public.v_allocations where household_id = pg_temp.v('hid')), 5600.00, 'Mover sobrante no es gasto');
 select throws_like($$ select public.adjust_allocation(pg_temp.v('alloc_super'), 13000, '') $$, '%MOTIVO_REQUERIDO%', 'Ajustar presupuesto exige motivo (nunca silencioso)');
 
@@ -186,7 +186,7 @@ insert into public.transactions (household_id, scope, type, amount, description,
 values (pg_temp.v('hid'), 'personal', 'income', 5000, 'Freelance secreto', pg_temp.v('mei_wallet'));
 insert into public.transactions (household_id, scope, type, amount, description, category_id, fund_id)
 values (pg_temp.v('hid'), 'personal', 'expense', 1200, 'Regalo sorpresa', pg_temp.v('cat_super'), pg_temp.v('mei_wallet'));
-select is(public.fund_balance(pg_temp.v('mei_wallet')), 3800.00, 'Finanzas personales funcionan');
+select is((select balance from public.v_fund_balances where fund_id = pg_temp.v('mei_wallet')), 3800.00, 'Finanzas personales funcionan');
 select is((select spent from public.v_allocations where id = pg_temp.v('alloc_super')), 14100.00, 'Gastos personales no forman parte del presupuesto del hogar');
 select throws_like($$ insert into public.transactions (household_id, scope, type, amount, description, category_id, fund_id)
                       values (pg_temp.v('hid'), 'household', 'expense', 10, 'Mezcla', pg_temp.v('cat_super'), pg_temp.v('mei_wallet')) $$,

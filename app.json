@@ -12,14 +12,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.eudysgarcia.optogether",
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.eudysgarcia.optogether",
-      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
