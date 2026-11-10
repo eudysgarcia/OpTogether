@@ -17,9 +17,9 @@ Todos los contenedores, redes y volúmenes llevan el prefijo `optogether` (no ch
 PostgreSQL no se expone fuera de Docker.
 
 ```bash
-sudo mkdir -p /opt/optogether && sudo chown $USER /opt/optogether
-git clone https://github.com/eudysgarcia/OpTogether.git /opt/optogether
-cd /opt/optogether/server
+sudo mkdir -p /opt/stacks/optogether && sudo chown $USER /opt/stacks/optogether
+git clone https://github.com/eudysgarcia/OpTogether.git /opt/stacks/optogether
+cd /opt/stacks/optogether/server
 cp .env.example .env && chmod 600 .env
 nano .env                     # PUBLIC_URL, 4 secretos (openssl rand -hex 32), SIGNUP_ALLOWLIST
 ss -ltn | grep -E ':(8730|8731) '   # si aparecen, cambia REST_PORT / API_PORT en .env
@@ -68,7 +68,7 @@ Servidor **sin** proxy propio: `docker compose --profile caddy up -d --build` (u
 ```bash
 docker compose ps                                   # estado
 docker compose logs -f api                          # registros
-cd /opt/optogether && git pull && cd server && docker compose up -d --build   # actualizar (aplica migraciones nuevas)
+cd /opt/stacks/optogether && git pull && cd server && docker compose up -d --build   # actualizar (aplica migraciones nuevas)
 docker compose exec api node src/cli.mjs list-users
 docker compose exec api node src/cli.mjs reset-password correo@ejemplo.com   # contraseña temporal sin SMTP
 ```
