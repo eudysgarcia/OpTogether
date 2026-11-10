@@ -87,7 +87,7 @@
     },
     "owner": "xeya",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/3ddae80b-b64e-443c-bb2b-9e1a2b775e69"

@@ -57,3 +57,46 @@ jobs:
         if: failure()
         working-directory: server
         run: docker compose logs --tail 100
+
+  # Despliegue continuo: solo en push a main y solo si las pruebas pasan.
+  # - Cambios de JavaScript → EAS Update al canal `preview` (el APK instalado se actualiza solo).
+  # - Cambios nativos (huella distinta) → nuevo APK con EAS Build.
+  deploy:
+    name: Despliegue continuo (EAS)
+    needs: [app, backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Verificar EXPO_TOKEN
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning::Falta el secreto EXPO_TOKEN; se omite el despliegue."
+            exit 0
+          fi
+      - uses: actions/checkout@v4
+        if: env.EXPO_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.EXPO_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+      - uses: expo/expo-github-action@v8
+        if: env.EXPO_TOKEN != ''
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+        if: env.EXPO_TOKEN != ''
+      - name: Publicar actualización o compilar APK según la huella nativa
+        if: env.EXPO_TOKEN != ''
+        uses: expo/expo-github-action/continuous-deploy-fingerprint@main
+        with:
+          profile: preview
+          branch: preview
+          environment: preview
+          platform: android
