@@ -17,10 +17,11 @@ import type {
 /** Mutación financiera estándar: feedback háptico, toast, refresco de saldos derivados. */
 export function useFinanceMutation<V, R>(
   fn: (v: V) => Promise<R>,
-  opts: { success?: string | ((r: R, v: V) => string); onSuccess?: (r: R, v: V) => void; silentError?: boolean } = {},
+  opts: { success?: string | ((r: R, v: V) => string); onSuccess?: (r: R, v: V) => void; silentError?: boolean; networkMode?: 'online' | 'always' } = {},
 ) {
   return useMutation({
     mutationFn: fn,
+    networkMode: opts.networkMode ?? 'online',
     onSuccess: (r, v) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const msg = typeof opts.success === 'function' ? opts.success(r, v) : opts.success;
@@ -207,6 +208,8 @@ export function useCreateTransaction(opts: { success?: string; onSuccess?: (id: 
     {
       success: (r) => (r.queued ? 'Guardado sin conexión: se sincronizará automáticamente' : opts.success ?? 'Movimiento registrado'),
       onSuccess: (r) => opts.onSuccess?.(r.id),
+      // La función decide: sin conexión encola (si es seguro) o informa el error; nunca queda en pausa.
+      networkMode: 'always',
     },
   );
 }
