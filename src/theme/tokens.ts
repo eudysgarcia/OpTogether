@@ -1,6 +1,7 @@
 /**
  * OpTogether Design System — tokens.
- * Regla 60/30/10: superficies blancas (60), azul marino de marca (30), amarillo como acento (10).
+ * Identidad v2: Azul marino #1F2C66 · Azul claro #60A5FA · Morado #8B5CF6 · Dorado #FBBF24.
+ * Regla 60/30/10: superficies blancas (60), azules/morado de marca (30), dorado como acento (10).
  * Ningún componente debe usar valores literales de color, radio o espaciado: todo sale de aquí.
  */
 
@@ -15,10 +16,22 @@ export const palette = {
   navy100: '#E6E9F6',
   navy50: '#F3F5FB',
 
-  yellow600: '#E0A800',
-  yellow500: '#FFCB2F', // acento
-  yellow300: '#FFE08A',
-  yellow100: '#FFF6D6',
+  yellow600: '#D99A06',
+  yellow500: '#FBBF24', // dorado (acento)
+  yellow300: '#FDE08A',
+  yellow100: '#FEF5D7',
+
+  sky600: '#2563EB',
+  sky500: '#3B82F6',
+  sky400: '#60A5FA', // azul claro (marca)
+  sky100: '#E3EEFE',
+
+  purple700: '#6D28D9',
+  purple500: '#8B5CF6', // morado (marca)
+  purple100: '#EFE9FE',
+
+  rose700: '#BE185D',
+  rose100: '#FCE7F1',
 
   green700: '#0F7A4D',
   green600: '#14935D',
@@ -35,8 +48,6 @@ export const palette = {
   teal600: '#0E7C86',
   teal100: '#DDF3F4',
 
-  violet600: '#6346C9',
-  violet100: '#ECE7FB',
 
   gray950: '#0B0D14',
   gray900: '#13161F',
@@ -74,6 +85,9 @@ export type ThemeColors = {
   onBrand: string;
   accent: string;
   accentSoft: string;
+  brandBlue: string;
+  brandPurple: string;
+  brandPurpleSoft: string;
   onAccent: string;
   positive: string;
   positiveSoft: string;
@@ -118,6 +132,9 @@ export const lightColors: ThemeColors = {
   onBrand: palette.white,
   accent: palette.yellow500,
   accentSoft: palette.yellow100,
+  brandBlue: palette.sky600,
+  brandPurple: palette.purple500,
+  brandPurpleSoft: palette.purple100,
   onAccent: palette.navy950,
   positive: palette.green600,
   positiveSoft: palette.green100,
@@ -131,12 +148,12 @@ export const lightColors: ThemeColors = {
   excess: palette.red600,
   savings: palette.teal600,
   savingsSoft: palette.teal100,
-  debt: palette.violet600,
-  debtSoft: palette.violet100,
+  debt: palette.rose700,
+  debtSoft: palette.rose100,
   fund: palette.yellow600,
   fundSoft: palette.yellow100,
-  contribution: palette.navy600,
-  contributionSoft: palette.navy100,
+  contribution: palette.sky600,
+  contributionSoft: palette.sky100,
   overlay: 'rgba(14,21,56,0.45)',
   skeleton: palette.gray100,
   tabBar: palette.white,
@@ -161,6 +178,9 @@ export const darkColors: ThemeColors = {
   onBrand: palette.white,
   accent: palette.yellow500,
   accentSoft: '#3A3216',
+  brandBlue: palette.sky400,
+  brandPurple: '#A78BFA',
+  brandPurpleSoft: '#2A2147',
   onAccent: palette.navy950,
   positive: palette.green500,
   positiveSoft: '#11301F',
@@ -174,12 +194,12 @@ export const darkColors: ThemeColors = {
   excess: '#F2564B',
   savings: '#2EB8C4',
   savingsSoft: '#0F2F33',
-  debt: '#9C84F0',
-  debtSoft: '#251C42',
+  debt: '#F472B6',
+  debtSoft: '#3A1528',
   fund: palette.yellow500,
   fundSoft: '#3A3216',
-  contribution: '#8C9BE6',
-  contributionSoft: '#1E2547',
+  contribution: palette.sky400,
+  contributionSoft: '#152A4A',
   overlay: 'rgba(0,0,0,0.6)',
   skeleton: palette.gray800,
   tabBar: palette.gray900,

@@ -25,7 +25,7 @@ export async function ensureChannel() {
       // eslint-disable-next-line import/namespace -- enum re-exportado (falso positivo)
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 120, 200],
-      lightColor: '#FFCB2F',
+      lightColor: '#FBBF24',
     });
   }
 }

@@ -6,9 +6,9 @@ import { fonts, space } from '../../theme/tokens';
 import { Text } from '../ui/Text';
 import { formatMoney } from '../../lib/money';
 
-/** Paleta categórica derivada de la marca (validada para contraste en claro/oscuro). */
-export const CHART_COLORS = ['#1F2C66', '#FFCB2F', '#0E7C86', '#6346C9', '#14935D', '#C2570C', '#7C88C2', '#D92D20', '#3D4E99', '#E0A800'];
-export const CHART_COLORS_DARK = ['#8C9BE6', '#FFCB2F', '#2EB8C4', '#9C84F0', '#1DB173', '#F08A3E', '#C9CFEA', '#F2564B', '#5C6FD1', '#FFE08A'];
+/** Paleta categórica derivada de la identidad v2 (marino, morado, azul claro, dorado + apoyo). */
+export const CHART_COLORS = ['#1F2C66', '#8B5CF6', '#60A5FA', '#FBBF24', '#0E7C86', '#14935D', '#C2570C', '#BE185D', '#2563EB', '#7C88C2'];
+export const CHART_COLORS_DARK = ['#8C9BE6', '#A78BFA', '#60A5FA', '#FBBF24', '#2EB8C4', '#1DB173', '#F08A3E', '#F472B6', '#3B82F6', '#C9CFEA'];
 
 export function useChartColors() {
   const { dark } = useTheme();

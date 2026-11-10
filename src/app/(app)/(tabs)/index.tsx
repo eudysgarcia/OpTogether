@@ -216,7 +216,7 @@ function HeroStat({ label, value, count, warn }: { label: string; value?: number
         <Money value={value} variant="amountS" color="onBrand" compact />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          {warn && <Icon name="alert" size={14} color="#FFCB2F" />}
+          {warn && <Icon name="alert" size={14} color="#FBBF24" />}
           <Text variant="amountS" color={warn ? 'accent' : 'onBrand'}>{count}</Text>
         </View>
       )}

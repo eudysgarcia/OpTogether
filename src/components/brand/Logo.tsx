@@ -1,29 +1,31 @@
 import React from 'react';
 import { Image, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
-import { radius, space } from '../../theme/tokens';
+import { space } from '../../theme/tokens';
 import { Text } from '../ui/Text';
 
+/** Isotipo (casa, pareja y corazón con barras). Fondo transparente: funciona en claro y oscuro. */
 export function Isotype({ size = 72 }: { size?: number }) {
-  const { dark } = useTheme();
-  const img = <Image source={require('../../../assets/brand/isotype.png')} style={{ width: size, height: size * 0.9 }} resizeMode="contain" accessibilityLabel="OpTogether" />;
-  if (!dark) return img;
   return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: radius.lg, padding: size * 0.12 }}>{img}</View>
+    <Image source={require('../../../assets/brand/isotype.png')} style={{ width: size, height: size }} resizeMode="contain" accessibilityLabel="OpTogether" />
   );
 }
 
+/** Logotipo: "Op" marino · "To" azul · "gether" morado, con subrayado dorado. */
 export function Wordmark({ size = 'lg', tagline = true }: { size?: 'md' | 'lg'; tagline?: boolean }) {
+  const { colors, dark } = useTheme();
+  const v = size === 'lg' ? 'display' : 'h1';
   return (
-    <View style={{ alignItems: 'center', gap: space[1] }}>
-      <Text variant={size === 'lg' ? 'display' : 'h1'} color="brand" style={{ letterSpacing: -1 }}>
-        Op<Text variant={size === 'lg' ? 'display' : 'h1'} color="text" style={{ letterSpacing: -1 }}>Together</Text>
+    <View style={{ alignItems: 'center', gap: space[1] }} accessible accessibilityLabel="OpTogether. Construyendo nuestro futuro, juntos">
+      <Text variant={v} style={{ letterSpacing: -1 }} color={dark ? '#FFFFFF' : colors.brand}>
+        Op
+        <Text variant={v} color={colors.brandBlue} style={{ letterSpacing: -1 }}>To</Text>
+        <Text variant={v} color={colors.brandPurple} style={{ letterSpacing: -1 }}>gether</Text>
       </Text>
       {tagline && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
-          <View style={{ width: 16, height: 2, borderRadius: 1, backgroundColor: '#FFCB2F' }} />
-          <Text variant="caption" color="textSecondary">Construyendo nuestro futuro, juntos</Text>
-          <View style={{ width: 16, height: 2, borderRadius: 1, backgroundColor: '#FFCB2F' }} />
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <Text variant="caption" color="textSecondary" style={{ letterSpacing: 0.6 }}>Construyendo nuestro futuro, juntos</Text>
+          <View style={{ width: 90, height: 3, borderRadius: 2, backgroundColor: colors.accent, alignSelf: 'flex-end', transform: [{ rotate: '-2deg' }] }} />
         </View>
       )}
     </View>

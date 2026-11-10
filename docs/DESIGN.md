@@ -2,12 +2,23 @@
 
 Tokens en `src/theme/tokens.ts`; ningún componente usa colores, radios o espaciados literales.
 
+## Identidad (v2)
+Isotipo: casa + pareja formando un corazón con barras de crecimiento (`assets/brand/isotype.png`,
+extraído de `assets/brand/branding-source-v2.jpg`). Logotipo: **Op** marino · **To** azul · **gether** morado,
+lema *“Construyendo nuestro futuro, juntos”* con subrayado dorado.
+
+| Color | Hex | Uso |
+|---|---|---|
+| Azul marino | `#1F2C66` | Marca principal: navegación, encabezado del inicio, botones primarios |
+| Azul claro | `#60A5FA` (`#2563EB` en texto) | Marca secundaria, aportaciones, miembro Eudys |
+| Morado | `#8B5CF6` | Marca secundaria, logotipo, miembro Mei |
+| Dorado | `#FBBF24` | Acento (≈10 %): botón de registro rápido, progreso, no leídos |
+
 ## Color (60 / 30 / 10)
-- **60 % blanco / superficies** (`surface`, `background`).
-- **30 % azul marino de marca `#1F2C66`** (`brand`): navegación, encabezado del inicio, acciones primarias.
-- **10 % amarillo `#FFCB2F`** (`accent`): botón de registro rápido, progreso del presupuesto en el inicio, indicadores no leídos.
-- Semánticos financieros, uno por concepto: presupuesto `budget`, gasto `spent`, disponible `available` (verde),
-  exceso `excess` (rojo), ahorro `savings` (teal), deuda `debt` (violeta), fondos `fund` (ámbar), aportaciones `contribution`.
+- **60 % blanco / superficies**, **30 % azules y morado de marca**, **10 % dorado**.
+- Semánticos financieros, uno por concepto y nunca un color de marca: presupuesto `budget` (marino),
+  gasto `spent`, disponible `available` (verde), exceso `excess` (rojo), ahorro `savings` (teal),
+  deuda `debt` (rosa oscuro), fondos `fund` (ámbar), aportaciones `contribution` (azul).
 - Tema oscuro completo con los mismos roles.
 
 ## Tipografía
